@@ -13,15 +13,16 @@ waterchem <- read_excel("SaltyLakesWaterChem.xlsx",
 glimpse(waterchem)
 
 variables <- colnames(waterchem)[4:13]
+lakes <- unique(waterchem$Lake)
 
 ## create functions to generate plots ##
 
 #time series plot
 timeseries_plot <- function(data,variable) {
   
-  p <- ggplot(data = data, aes(x = Date, y = .data[[variable]], color = Lake)) +
+  p <- ggplot(data = data, aes(x = Date, y = .data[[variable]])) +
     geom_point(size = 3) +
-    theme_classic()
+    theme_classic(base_size=14)
 
   return(p)
 }
@@ -36,7 +37,9 @@ ui <- fluidPage(
     tabPanel("Monitoring data exploration",
              p("Select the variable you want to plot over time:"),
              selectInput("variable",label="Variable",choices=variables),
-             plotOutput("timeseriesplot")
+             plotOutput("timeseriesplot"),
+             p("Select the lakes you want to compare:"),
+             selectInput("lake",)
              )
     ),
 )
