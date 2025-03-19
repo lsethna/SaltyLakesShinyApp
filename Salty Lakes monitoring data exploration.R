@@ -9,11 +9,22 @@ waterchem <- read_excel("SaltyLakesWaterChem.xlsx",
                                       "numeric", "numeric", "numeric", 
                                       "numeric", "numeric", "numeric", 
                                       "numeric", "numeric", "numeric", 
-                                      "numeric")) %>% janitor::clean_names()
+                                      "numeric"))
 glimpse(waterchem)
 
 variables <- colnames(waterchem)[4:13]
 
+## create functions to generate plots ##
+
+#time series plot
+timeseries_plot <- function(data,variable) {
+  
+  p <- ggplot(data = data, aes(x = Date, y = .data[[variable]], color = Lake)) +
+    geom_point(size = 3) +
+    theme_classic()
+
+  return(p)
+}
 
 ui <- fluidPage(
   titlePanel("Water chemistry data collected as part of the LCCMR - Salty Lakes project"),
@@ -44,9 +55,10 @@ server <- function(input, output, session) {
   #user_variable <- get(input$variable)
   #waterchem_plot <- waterchem %>% select(Lake,Depth,Date,user_variable)
   
+  data <- reactive(waterchem)
+  
   output$timeseriesplot <- renderPlot({
-   ggplot(waterchem,aes(x=date,y=input$variable))+
-      geom_point()
+    timeseries_plot(data(),input$variable)
   })
 }
 
