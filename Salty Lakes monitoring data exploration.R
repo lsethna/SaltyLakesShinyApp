@@ -42,15 +42,15 @@ ui <- fluidPage(
              ), #close sidebar panel
              sidebarLayout(
                sidebarPanel(
-                 p("Select the variable you want to compare between lake depths:"),
+                 p("Select the variable you want to compare between lakes and depths:"),
                  selectInput("depth_variable",label="Variable",choices=variables),
-                 p("Select the lakes you want to compare:"),
+                 p("Select lakes to compare:"),
                  selectInput("depth_lake",label="Lake",choices=lakes,multiple=T)
                ),
                mainPanel(
-                 plotOutput("depth_boxplot")
+                 plotOutput("lake_depth_boxplot")
                )
-             ),
+             ), #close sidebar panel
              )
               ),
 )
@@ -76,6 +76,26 @@ server <- function(input, output, session) {
       geom_point(size=3)+
       theme_classic(base_size=14)
   })
+  
+  depth_data <- reactive({
+    waterchem_v2 %>%
+      dplyr::filter(variable %in% input$depth_variable,
+                    Lake %in% input$depth_lake)
+  })
+  
+  output$lake_depth_boxplot <- renderPlot({
+    ggplot(depth_data(),aes(y=value,x=Lake,color=Depth))+
+      geom_boxplot()+
+      theme_classic(base_size=14)
+  })
+  
 }
+
+waterchem_v2 %>%
+  dplyr::filter(variable %in% variables[1],
+                Lake %in% lakes[1:3]) %>%
+  ggplot(aes(y=value,x=Lake,color=Depth))+
+  geom_boxplot()+
+  theme_classic(base_size=14)
 
 shinyApp(ui, server)
