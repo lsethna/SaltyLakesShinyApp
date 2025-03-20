@@ -51,7 +51,8 @@ ui <- fluidPage(
                  plotOutput("lake_depth_boxplot")
                )
              ), #close sidebar panel
-             )
+             ),
+    tabPanel("Exploring the role of road salt on nutrients")
               ),
 )
 
