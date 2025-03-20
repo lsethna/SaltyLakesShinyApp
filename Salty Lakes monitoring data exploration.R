@@ -12,15 +12,19 @@ waterchem <- read_excel("SaltyLakesWaterChem.xlsx",
                                       "numeric"))
 glimpse(waterchem)
 
-variables <- colnames(waterchem)[4:13]
-lakes <- unique(waterchem$Lake)
+#convert to long format
+waterchem_v2 <- tidyr::pivot_longer(waterchem,cols=c(4:13),names_to="variable")
+glimpse(waterchem_v2)
+
+variables <- unique(waterchem_v2$variable)
+lakes <- unique(waterchem_v2$Lake)
 
 ## create functions to generate plots ##
 
 #time series plot
-timeseries_plot <- function(data,variable) {
+timeseries_plot <- function(data,variable,Lake) {
   
-  p <- ggplot(data = data, aes(x = Date, y = .data[[variable]])) +
+  p <- ggplot(data = data, aes(x = Date, y = .data[[variable]], color = .data$Lake)) +
     geom_point(size = 3) +
     theme_classic(base_size=14)
 
@@ -35,15 +39,23 @@ ui <- fluidPage(
              imageOutput("map")
              ),
     tabPanel("Monitoring data exploration",
-             p("Select the variable you want to plot over time:"),
-             selectInput("variable",label="Variable",choices=variables),
-             plotOutput("timeseriesplot"),
-             p("Select the lakes you want to compare:"),
-             selectInput("lake",)
+             #side bar layout allows you to add box on the side of the page, good for plotting
+             sidebarLayout(
+               sidebarPanel(
+                 p("Select the variable you want to plot over time:"),
+                 selectInput("variable",label="Variable",choices=variables),
+                 p("Select the lakes you want to compare:"),
+                 selectInput("lake",label="Lake",choices=lakes,multiple=T)
+               ),
+               #plot variable time series
+               mainPanel(
+                 plotOutput("timeseriesplot")
+               )
+             ), #close sidebar panel
+             
              )
-    ),
+              ),
 )
-
 
 server <- function(input, output, session) {
   output$map <- renderImage({
@@ -58,10 +70,16 @@ server <- function(input, output, session) {
   #user_variable <- get(input$variable)
   #waterchem_plot <- waterchem %>% select(Lake,Depth,Date,user_variable)
   
-  data <- reactive(waterchem)
+  data <- reactive({
+    waterchem_v2 %>%
+      dplyr::filter(variable %in% input$variable,
+                    Lake %in% input$lake)
+  })
   
   output$timeseriesplot <- renderPlot({
-    timeseries_plot(data(),input$variable)
+    ggplot(data(),aes(x=Date,y=value,color=Lake,shape=Depth))+
+      geom_point(size=3)+
+      theme_classic(base_size=14)
   })
 }
 
