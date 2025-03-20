@@ -19,18 +19,6 @@ glimpse(waterchem_v2)
 variables <- unique(waterchem_v2$variable)
 lakes <- unique(waterchem_v2$Lake)
 
-## create functions to generate plots ##
-
-#time series plot
-timeseries_plot <- function(data,variable,Lake) {
-  
-  p <- ggplot(data = data, aes(x = Date, y = .data[[variable]], color = .data$Lake)) +
-    geom_point(size = 3) +
-    theme_classic(base_size=14)
-
-  return(p)
-}
-
 ui <- fluidPage(
   titlePanel("Water chemistry data collected as part of the LCCMR - Salty Lakes project"),
   tabsetPanel(
@@ -43,16 +31,26 @@ ui <- fluidPage(
              sidebarLayout(
                sidebarPanel(
                  p("Select the variable you want to plot over time:"),
-                 selectInput("variable",label="Variable",choices=variables),
+                 selectInput("time_variable",label="Variable",choices=variables),
                  p("Select the lakes you want to compare:"),
-                 selectInput("lake",label="Lake",choices=lakes,multiple=T)
+                 selectInput("time_lake",label="Lake",choices=lakes,multiple=T)
                ),
                #plot variable time series
                mainPanel(
                  plotOutput("timeseriesplot")
                )
              ), #close sidebar panel
-             
+             sidebarLayout(
+               sidebarPanel(
+                 p("Select the variable you want to compare between lake depths:"),
+                 selectInput("depth_variable",label="Variable",choices=variables),
+                 p("Select the lakes you want to compare:"),
+                 selectInput("depth_lake",label="Lake",choices=lakes,multiple=T)
+               ),
+               mainPanel(
+                 plotOutput("depth_boxplot")
+               )
+             ),
              )
               ),
 )
@@ -67,17 +65,14 @@ server <- function(input, output, session) {
     )
   }, deleteFile = FALSE)
   
-  #user_variable <- get(input$variable)
-  #waterchem_plot <- waterchem %>% select(Lake,Depth,Date,user_variable)
-  
-  data <- reactive({
+  time_data <- reactive({
     waterchem_v2 %>%
-      dplyr::filter(variable %in% input$variable,
-                    Lake %in% input$lake)
+      dplyr::filter(variable %in% input$time_variable,
+                    Lake %in% input$time_lake)
   })
   
   output$timeseriesplot <- renderPlot({
-    ggplot(data(),aes(x=Date,y=value,color=Lake,shape=Depth))+
+    ggplot(time_data(),aes(x=Date,y=value,color=Lake,shape=Depth))+
       geom_point(size=3)+
       theme_classic(base_size=14)
   })
