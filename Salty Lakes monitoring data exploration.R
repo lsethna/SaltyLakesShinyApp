@@ -91,11 +91,4 @@ server <- function(input, output, session) {
   
 }
 
-waterchem_v2 %>%
-  dplyr::filter(variable %in% variables[1],
-                Lake %in% lakes[1:3]) %>%
-  ggplot(aes(y=value,x=Lake,color=Depth))+
-  geom_boxplot()+
-  theme_classic(base_size=14)
-
 shinyApp(ui, server)
