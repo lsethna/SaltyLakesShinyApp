@@ -1,6 +1,6 @@
 rm(list=ls())
-getwd()
-setwd("C:/Users/lsethna_smm/Documents/GitHub/SaltyLakesShinyApp")
+# getwd()
+# setwd("C:/Users/lsethna_smm/Documents/GitHub/SaltyLakesShinyApp")
 
 librarian::shelf(readxl,shiny,tidyverse)
 
@@ -18,6 +18,9 @@ glimpse(waterchem_v2)
 
 variables <- unique(waterchem_v2$variable)
 lakes <- unique(waterchem_v2$Lake)
+
+waterchem_v3 <- waterchem %>% 
+  rename(chloride_mg_L="Cl- (mg/L)")
 
 ui <- fluidPage(
   titlePanel("Water chemistry data collected as part of the LCCMR - Salty Lakes project"),
@@ -52,7 +55,31 @@ ui <- fluidPage(
                )
              ), #close sidebar panel
              ),
-    tabPanel("Exploring the role of road salt on nutrients")
+    tabPanel("Exploring the role of road salt on nutrients",
+             sidebarLayout(
+               sidebarPanel(
+                 p("Select the variable you want to plot in relation to chloride concentration:"),
+                 varSelectInput(inputId = "y_variable_chloride",
+                                label= "Variable",
+                                data= waterchem_v3 %>% 
+                                  select(`Chl-a (ug/L)`, 
+                                         `SRP (ug P/L)`, 
+                                         `Total Phosphorus (ug P/L)`,
+                                         `Total Nitrogen (mg N/L)`,
+                                         `NH4 (mg N/L)`,
+                                         `NO3 + NO2 (mg N/L)`,
+                                         `DIC (mg C/L)`,
+                                         `DOC (mg C/L)`,
+                                         `DSi (mg SiO2/L)`)) 
+                 # p("Select the lakes you want to compare:"),
+                 # selectInput("time_lake",label="Lake",choices=lakes,multiple=T)
+               ),
+               #plot variable time series
+               mainPanel(
+                 plotOutput("chloride_plot")
+               )
+             )
+             )
               ),
 )
 
@@ -90,6 +117,14 @@ server <- function(input, output, session) {
       theme_classic(base_size=14)
   })
   
+  output$chloride_plot <- renderPlot({
+    ggplot(waterchem_v3, aes(x=chloride_mg_L, y=!!input$y_variable_chloride))+
+      geom_point()+
+      theme_classic(base_size=14)
+  })
+  
 }
 
 shinyApp(ui, server)
+
+
