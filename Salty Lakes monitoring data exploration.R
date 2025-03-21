@@ -22,6 +22,8 @@ lakes <- unique(waterchem_v2$Lake)
 waterchem_v3 <- waterchem %>% 
   rename(chloride_mg_L="Cl- (mg/L)")
 
+
+
 ui <- fluidPage(
   titlePanel("Water chemistry data collected as part of the LCCMR - Salty Lakes project"),
   tabsetPanel(
@@ -70,11 +72,14 @@ ui <- fluidPage(
                                          `NO3 + NO2 (mg N/L)`,
                                          `DIC (mg C/L)`,
                                          `DOC (mg C/L)`,
-                                         `DSi (mg SiO2/L)`)) 
-                 # p("Select the lakes you want to compare:"),
-                 # selectInput("time_lake",label="Lake",choices=lakes,multiple=T)
+                                         `DSi (mg SiO2/L)`),
+                                selected = "Chl-a (ug/L)"),
+                 p("Select what depth you want to look at:"),
+                 checkboxGroupInput(inputId = "depth_chloride",
+                                    label= "Depth",
+                                    choices = c("Epi", "Hypo"),  #CURRENTLY EXCLUDING DATA WHERE DEPTH IS CODED DIFFERENTLY, need to fix
+                                    selected = "Epi")
                ),
-               #plot variable time series
                mainPanel(
                  plotOutput("chloride_plot")
                )
@@ -118,7 +123,8 @@ server <- function(input, output, session) {
   })
   
   output$chloride_plot <- renderPlot({
-    ggplot(waterchem_v3, aes(x=chloride_mg_L, y=!!input$y_variable_chloride))+
+    ggplot(data= waterchem_v3 %>% filter(Depth %in% input$depth_chloride), #CURRENTLY EXCLUDING DATA WHERE DEPTH IS CODED DIFFERENTLY, need to fix
+           aes(x=chloride_mg_L, y=!!input$y_variable_chloride, color=Depth))+
       geom_point()+
       theme_classic(base_size=14)
   })
