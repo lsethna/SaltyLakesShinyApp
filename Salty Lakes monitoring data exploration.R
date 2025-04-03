@@ -190,12 +190,11 @@ server <- function(input, output, session) {
     ggplot(data= waterchem_v3,
            aes(x=chloride_mg_L, y=!!input$y_variable_chloride2, color=Depth))+
       geom_point()+
-      # facet_wrap(~Risk_Level) +
+      facet_wrap(~Risk_Level, nrow=2) +
       theme_classic(base_size=14)
   }) #trying to make a plot faceted by risk level, doesn't work yet
   
 }
 
 shinyApp(ui, server)
-
 
