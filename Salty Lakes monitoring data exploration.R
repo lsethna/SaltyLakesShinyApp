@@ -9,7 +9,8 @@ waterchem <- read_excel("Raw data tidying/Salty_2023_monitoring_data_clean.xlsx"
 glimpse(waterchem)
 
 #convert to long format
-waterchem_v2 <- tidyr::pivot_longer(waterchem,cols=c(4:13),names_to="variable")
+waterchem_v2 <- tidyr::pivot_longer(waterchem,cols=c(4:13),names_to="variable") %>% mutate(value=as.numeric(value))
+
 glimpse(waterchem_v2)
 
 variables <- unique(waterchem_v2$variable)
@@ -53,6 +54,7 @@ ui <- fluidPage(
              sidebarLayout(
                sidebarPanel(
                  p("Select the variable you want to plot in relation to chloride concentration:"),
+                 selectInput("lake_chloride",label="Lake",choices=lakes,multiple=T),
                  selectInput("variable_chloride",label="Variable",choices=variables[1:12]), #limits choices to everything but Cl
                  p("Select what depth you want to look at:"),
                  checkboxGroupInput(inputId = "depth_chloride",
@@ -128,15 +130,14 @@ server <- function(input, output, session) {
     waterchem_v2 %>%
       pivot_wider(names_from=variable,values_from=value) %>%
       pivot_longer(!c(Lake,Date,Depth,`Cl- (mg/L)`),names_to="variable") %>%
-      mutate(`Cl- (mg/L)`=as.numeric(`Cl- (mg/L)`),
-             value=as.numeric(value)) %>%
-      dplyr::filter(variable %in% input$variable_chloride,
+      dplyr::filter(Lake %in% input$lake_chloride,
+                    variable %in% input$variable_chloride,
                     Depth %in% input$depth_chloride) 
       
   })
   
   output$chloride_plot <- renderPlot({
-    ggplot(chloride_data(),aes(x=`Cl- (mg/L)`, y=value, color=Depth))+
+    ggplot(chloride_data(),aes(x=`Cl- (mg/L)`,y=value,color=Lake,shape=Depth))+
       geom_point(size=3)+
       theme_classic(base_size=14)
   })
