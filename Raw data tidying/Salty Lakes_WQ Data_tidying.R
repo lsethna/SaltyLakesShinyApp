@@ -25,7 +25,7 @@ getwd()
 
 #read in the data
 #you'll need to change this based on where the data is stored on your computer
-WQ_Data <- readxl::read_excel("G:/Shared drives/SCWRS/Shared/ABC Shared Lab Folder/R Code for Lab/Tidying data/Lienne example/WQ_Data.xlsx")
+WQ_Data <- readxl::read_excel("Raw data tidying/WQ_Data.xlsx")
 
 #look at structure of data
 dplyr::glimpse(WQ_Data)
@@ -103,6 +103,18 @@ perc_err <- dup_check %>%
   )
 
 #some of these variables are well over 10% different - what to do?
+
+## ----------------------------------- ##
+# Export cleaned data
+## ----------------------------------- ##
+
+glimpse(WQ_Data)
+
+#export without the dups
+WQ_Data_clean <- WQ_Data %>% filter(dup=="") %>%
+  select(lake,`Collection Date`,Depth,`Chl-a (ug/L)`:`Cl- (mg/L)`)
+
+write.csv(WQ_Data_clean,file="Salty_2023_monitoring_data_clean.csv")
 
 ## ----------------------------------- ##
 # Plotting
