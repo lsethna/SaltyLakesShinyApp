@@ -66,27 +66,27 @@ ui <- fluidPage(
                  plotOutput("chloride_plot")
                )
              ) #close sidebar layout
-             # sidebarLayout(
-             #   sidebarPanel(
-             #     p("Select the variable you want to plot in relation to chloride concentration:"),
-             #     varSelectInput(inputId = "y_variable_chloride2",
-             #                    label= "Variable",
-             #                    data= waterchem %>% 
-             #                      select(`Chl-a (ug/L)`, 
-             #                             `SRP (ug P/L)`, 
-             #                             `Total Phosphorus (ug P/L)`,
-             #                             `Total Nitrogen (mg N/L)`,
-             #                             `NH4 (mg N/L)`,
-             #                             `NO3 + NO2 (mg N/L)`,
-             #                             `DIC (mg C/L)`,
-             #                             `DOC (mg C/L)`,
-             #                             `DSi (mg SiO2/L)`),
-             #                    selected = "Chl-a (ug/L)"),
-             #     ), #close sidebar panel
-             #   mainPanel(
-             #     plotOutput("chloride_plot2")
-             #     )
-             #   ) #close sidebar layout
+             sidebarLayout(
+               sidebarPanel(
+                 p("Select the variable you want to plot in relation to chloride concentration:"),
+                 varSelectInput(inputId = "y_variable_chloride2",
+                                label= "Variable",
+                                data= waterchem %>%
+                                  select(`Chl-a (ug/L)`,
+                                         `SRP (ug P/L)`,
+                                         `Total Phosphorus (ug P/L)`,
+                                         `Total Nitrogen (mg N/L)`,
+                                         `NH4 (mg N/L)`,
+                                         `NO3 + NO2 (mg N/L)`,
+                                         `DIC (mg C/L)`,
+                                         `DOC (mg C/L)`,
+                                         `DSi (mg SiO2/L)`),
+                                selected = "Chl-a (ug/L)"),
+                 ), #close sidebar panel
+               mainPanel(
+                 plotOutput("chloride_plot2")
+                 )
+               ) #close sidebar layout
              
              
     ) #close tab panel
@@ -143,13 +143,13 @@ server <- function(input, output, session) {
       theme_classic(base_size=14)
   })
   
-  # output$chloride_plot2 <- renderPlot({
-  #   ggplot(data= waterchem_v2,
-  #          aes(x=chloride_mg_L, y=!!input$y_variable_chloride2, color=Depth))+
-  #     geom_point()+
-  #     facet_wrap(~Risk_Level, nrow=2) +
-  #     theme_classic(base_size=14)
-  # }) #trying to make a plot faceted by risk level, doesn't work yet
+  output$chloride_plot2 <- renderPlot({
+    ggplot(data= waterchem,
+           aes(x=`Cl- (mg/L)`, y=!!input$y_variable_chloride2, color=Depth))+
+      geom_point()+
+      facet_wrap(~Risk_Level, nrow=2) +
+      theme_classic(base_size=14)
+  })
   
 }
 
