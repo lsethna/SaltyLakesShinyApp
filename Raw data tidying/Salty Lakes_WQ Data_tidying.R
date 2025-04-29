@@ -128,6 +128,23 @@ perc_err <- dup_check %>%
 #some of these variables are well over 10% different - what to do?
 
 ## ----------------------------------- ##
+# Add region and risk level column
+## ----------------------------------- ##
+
+WQ_Data <- WQ_Data %>% 
+  mutate(Risk_Level = case_when(lake=="Tanners"|lake=="Parkers"|lake=="Brownie"|lake=="Little Johanna"|lake=="Henry"~"Impacted",
+                                lake=="Medicine"|lake=="Bde Maka Ska"|lake=="Wabasso"|lake=="Uhlenkolts"|lake=="McCarrons"~"At Risk",
+                                lake=="Minnetonka"|lake=="Cedar"|lake=="Phalen"|lake== "Snail"|lake=="Smith"~"Least Impacted"),
+         Region = case_when(lake=="Little Johanna"|lake=="Wabasso"|lake =="Snail" ~ "North Metro", 
+                            lake=="Brownie"|lake=="Bde Maka Ska"|lake=="Cedar" ~ "South Metro", 
+                            lake=="Tanners"|lake=="McCarrons"|lake=="Phalen" ~ "East Metro", 
+                            lake=="Parkers"|lake=="Medicine"|lake=="Minnetonka" ~ " West Metro",
+                            lake=="Henry"|lake=="Uhlenkolts"|lake=="Smith" ~ "Central MN")
+         )
+unique(WQ_Data$Risk_Level)
+unique(WQ_Data$Region)
+
+## ----------------------------------- ##
 # Export cleaned data
 ## ----------------------------------- ##
 
@@ -135,7 +152,7 @@ glimpse(WQ_Data)
 
 #export without the dups
 WQ_Data_clean <- WQ_Data %>% filter(dup=="") %>%
-  select(lake,`Collection Date`,Depth,`Chl-a (ug/L)`:`Cl- (mg/L)`) %>%
+  select(lake,Risk_Level,Region,`Collection Date`,Depth,`Chl-a (ug/L)`:`Cl- (mg/L)`) %>%
   rename(Date=`Collection Date`)
 glimpse(WQ_Data_clean)
 
