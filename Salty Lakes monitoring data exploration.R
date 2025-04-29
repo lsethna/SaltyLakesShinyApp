@@ -1,20 +1,21 @@
 rm(list=ls())
-getwd()
+# getwd()
 # setwd("C:/Users/lsethna_smm/Documents/GitHub/SaltyLakesShinyApp")
 
 librarian::shelf(readxl,shiny,tidyverse)
 
 #read in cleaned dataset
-waterchem <- read_excel("Raw data tidying/Salty_2023_monitoring_data_clean.xlsx")
+waterchem <- read_csv("Salty_2023_2024_monitoring_data_clean.csv") %>% 
+  select(!`...1`)
 glimpse(waterchem)
 
 #convert to long format
-waterchem_v2 <- tidyr::pivot_longer(waterchem,cols=c(4:13),names_to="variable") %>% mutate(value=as.numeric(value))
+waterchem_v2 <- tidyr::pivot_longer(waterchem,cols=c(6:15),names_to="variable") %>% mutate(value=as.numeric(value))
 
 glimpse(waterchem_v2)
 
 variables <- unique(waterchem_v2$variable)
-lakes <- unique(waterchem_v2$Lake)
+lakes <- unique(waterchem_v2$lake)
 depths <- unique(waterchem_v2$Depth)
 
 ui <- fluidPage(
@@ -55,7 +56,7 @@ ui <- fluidPage(
                sidebarPanel(
                  p("Select the variable you want to plot in relation to chloride concentration:"),
                  selectInput("lake_chloride",label="Lake",choices=lakes,multiple=T),
-                 selectInput("variable_chloride",label="Variable",choices=variables[1:12]), #limits choices to everything but Cl
+                 selectInput("variable_chloride",label="Variable",choices=variables[1:9]), #limits choices to everything but Cl
                  p("Select what depth you want to look at:"),
                  checkboxGroupInput(inputId = "depth_chloride",
                                     label= "Depth",
@@ -64,7 +65,7 @@ ui <- fluidPage(
                mainPanel(
                  plotOutput("chloride_plot")
                )
-             ), #close sidebar layout
+             ) #close sidebar layout
              # sidebarLayout(
              #   sidebarPanel(
              #     p("Select the variable you want to plot in relation to chloride concentration:"),
@@ -105,11 +106,11 @@ server <- function(input, output, session) {
   time_data <- reactive({
     waterchem_v2 %>%
       dplyr::filter(variable %in% input$time_variable,
-                    Lake %in% input$time_lake)
+                    lake %in% input$time_lake)
   })
   
   output$timeseriesplot <- renderPlot({
-    ggplot(time_data(),aes(x=Date,y=value,color=Lake,shape=Depth))+
+    ggplot(time_data(),aes(x=Date,y=value,color=lake,shape=Depth))+
       geom_point(size=3)+
       theme_classic(base_size=14)
   })
@@ -117,11 +118,11 @@ server <- function(input, output, session) {
   depth_data <- reactive({
     waterchem_v2 %>%
       dplyr::filter(variable %in% input$depth_variable,
-                    Lake %in% input$depth_lake)
+                    lake %in% input$depth_lake)
   })
   
   output$lake_depth_boxplot <- renderPlot({
-    ggplot(depth_data(),aes(y=value,x=Lake,color=Depth))+
+    ggplot(depth_data(),aes(y=value,x=lake,color=Depth))+
       geom_boxplot()+
       theme_classic(base_size=14)
   })
@@ -129,15 +130,15 @@ server <- function(input, output, session) {
   chloride_data <- reactive({
     waterchem_v2 %>%
       pivot_wider(names_from=variable,values_from=value) %>%
-      pivot_longer(!c(Lake,Date,Depth,`Cl- (mg/L)`),names_to="variable") %>%
-      dplyr::filter(Lake %in% input$lake_chloride,
+      pivot_longer(!c(lake,Date,Depth,`Cl- (mg/L)`),names_to="variable") %>%
+      dplyr::filter(lake %in% input$lake_chloride,
                     variable %in% input$variable_chloride,
                     Depth %in% input$depth_chloride) 
     
   })
   
   output$chloride_plot <- renderPlot({
-    ggplot(chloride_data(),aes(x=`Cl- (mg/L)`,y=value,color=Lake,shape=Depth))+
+    ggplot(chloride_data(),aes(x=`Cl- (mg/L)`,y=value,color=lake,shape=Depth))+
       geom_point(size=3)+
       theme_classic(base_size=14)
   })
