@@ -15,7 +15,7 @@
 
 # Load libraries needed for script
 # install.packages("librarian") #run this line if you don't have "librarian" package installed
-librarian::shelf(readxl,tidyverse,randomcoloR)
+librarian::shelf(readxl,tidyverse,janitor,randomcoloR)
 
 # Clear environment
 rm(list = ls())
@@ -25,37 +25,57 @@ getwd()
 
 #read in the data
 #you'll need to change this based on where the data is stored on your computer
-WQ_Data <- readxl::read_excel("Raw data tidying/WQ_Data.xlsx")
+WQ_Data_23 <- readxl::read_excel("2023 Salty Lakes water chemistry results.xlsx")
+WQ_Data_24 <- readxl::read_excel("2024 Salty Lakes water chemistry results.xlsx")
 
 #look at structure of data
-dplyr::glimpse(WQ_Data)
+dplyr::glimpse(WQ_Data_23)
+dplyr::glimpse(WQ_Data_24)
 
-#chl-a should be numeric/double
-WQ_Data$`Chl-a (ug/L)` <- as.numeric(WQ_Data$`Chl-a (ug/L)`)
-dplyr::glimpse(WQ_Data)
+#merge together
+WQ_Data <- WQ_Data_23 %>% 
+  #keep only monitoring data
+  select(`Sample ID`,Depth,`Collection Date`,`Chl-a (ug/L)`:`Cl- (mg/L)`) %>%
+  #combine
+  bind_rows(WQ_Data_24) %>%
+  #remove NA columns
+  select(`Sample ID`:`Cl- (mg/L)`) %>%
+  #remove rows with NA Sample ID
+  filter(!is.na(`Sample ID`))
+  
+glimpse(WQ_Data)
+
+#all nutrient data should be numeric/double
+WQ_Data <- WQ_Data %>% mutate_at(vars(`Chl-a (ug/L)`:`Cl- (mg/L)`), as.numeric)
+
+#remove first row with no data
+WQ_Data <- WQ_Data[2:382,]
 
 ## ----------------------------------- ##
 # Data tidying ----
 ## ----------------------------------- ##
 
-#get list of unique sites and dates in WQ_Dataunique(WQ_Data$`Sample ID`)
-unique(WQ_Data$`Collection Date`)
+#get list of unique sites and dates in WQ_Data
 unique(WQ_Data$`Sample ID`)
+unique(WQ_Data$`Collection Date`)
 
 #create new column indicating duplicate samples
 #the dplyr %>% (pipe) feeds the dataframe into the following functions, this eliminates the need to explicitly call the df and its columns (no need to use WQ_Data$dup)
 WQ_Data <- WQ_Data %>%
   #look for the pattern "DUP" in the Sample ID, if it is a dup sample, write "dup" in the dup column. If not, leave blank.
-  dplyr::mutate(dup = ifelse(grepl("DUP",`Sample ID`), "dup","")) 
+  dplyr::mutate(dup = ifelse(grepl("DUP",`Sample ID`,ignore.case=T), "dup","")) 
 
 #create new column with standardized lake names
 WQ_Data <- WQ_Data %>%
-  dplyr::mutate(lake = case_when(`Sample ID`=="McCarons"|`Sample ID`=="McCarron"~"McCarrons",
+  dplyr::mutate(lake = case_when(`Sample ID`=="McCarons"|`Sample ID`=="McCarron"|`Sample ID`=="Dup McCarrons"~"McCarrons",
                                  `Sample ID`=="Lil Jo"|`Sample ID`=="Little Johana"~"Little Johanna",
-                                 `Sample ID`=="DUP Parkers"~"Parkers",
+                                 `Sample ID`=="DUP Parkers"|`Sample ID`=="Parkers DUP"~"Parkers",
                                  `Sample ID`=="DUP Smith"~"Smith",
                                  `Sample ID`=="DUP Snail"~"Snail",
                                  `Sample ID`=="DUP Medicine"~"Medicine",
+                                 `Sample ID`=="Henry (dup)"~"Henry",
+                                 `Sample ID`=="Minnetonka DUP"|`Sample ID`=="Minnetona"~"Minnetonka",
+                                 `Sample ID`=="Dup Wabasso"~"Wabasso",
                                  T~`Sample ID`))
 #check unique site names
 unique(WQ_Data$lake)
@@ -65,7 +85,10 @@ length(unique(WQ_Data$lake))
 #check depths
 unique(WQ_Data$Depth)
 #change all caps "HYPO" to "Hypo" to match
-WQ_Data$Depth = ifelse(WQ_Data$Depth=="HYPO","Hypo",WQ_Data$Depth)
+#and dups...
+WQ_Data = WQ_Data %>% mutate(Depth = case_when(Depth=="HYPO"|Depth=="hypo"~"Hypo",
+                                                Depth=="DUP_Epi"~"Epi",
+                                                T~Depth))
 
 ## ----------------------------------- ##
 # Data QC - dup check ----
@@ -112,9 +135,11 @@ glimpse(WQ_Data)
 
 #export without the dups
 WQ_Data_clean <- WQ_Data %>% filter(dup=="") %>%
-  select(lake,`Collection Date`,Depth,`Chl-a (ug/L)`:`Cl- (mg/L)`)
+  select(lake,`Collection Date`,Depth,`Chl-a (ug/L)`:`Cl- (mg/L)`) %>%
+  rename(Date=`Collection Date`)
+glimpse(WQ_Data_clean)
 
-write.csv(WQ_Data_clean,file="Salty_2023_monitoring_data_clean.csv")
+write.csv(WQ_Data_clean,file="Salty_2023_2024_monitoring_data_clean.csv")
 
 ## ----------------------------------- ##
 # Plotting
