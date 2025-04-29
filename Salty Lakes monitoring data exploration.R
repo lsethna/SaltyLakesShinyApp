@@ -1,64 +1,21 @@
 rm(list=ls())
-# getwd()
+getwd()
 # setwd("C:/Users/lsethna_smm/Documents/GitHub/SaltyLakesShinyApp")
 
 librarian::shelf(readxl,shiny,tidyverse)
 
-waterchem <- read_excel("SaltyLakesWaterChem.xlsx",
-                        col_types = c("text", "text", "date", 
-                                      "numeric", "numeric", "numeric", 
-                                      "numeric", "numeric", "numeric", 
-                                      "numeric", "numeric", "numeric", 
-                                      "numeric"))
+#read in cleaned dataset
+waterchem <- read_excel("Raw data tidying/Salty_2023_monitoring_data_clean.xlsx")
 glimpse(waterchem)
 
-#################################################################
-#DATA CLEANING TO MOVE TO ANOTHER DOCUMENT LATER
-
-unique(waterchem$Lake) #finding the lake names
-unique(waterchem$Depth) #finding the depth names
-
-waterchem_clean <- waterchem %>% 
-  #correcting lake and depth names
-  mutate(
-    Lake= str_replace(Lake, pattern = "Lil Jo", replacement = "Little Johanna"),
-    Lake= str_replace(Lake, pattern = "Little Johana", replacement = "Little Johanna"),
-    Lake= str_replace(Lake, pattern = "McCarons", replacement = "McCarrons"),
-    Lake= str_replace(Lake, pattern = "\\bMcCarron\\b", replacement = "McCarrons"),
-    Lake= str_replace(Lake, pattern = "Minnetona", replacement = "Minnetonka"),
-    Depth= str_replace(Depth, pattern = "HYPO", replacement = "Hypo"),
-    Depth= str_replace(Depth, pattern = "hypo", replacement = "Hypo")
-    ) %>%
-  #removing the DUPs
-  filter(Lake=="McCarrons"|
-           Lake=="Little Johanna"|Lake=="Tanners"|Lake=="Phalen"|Lake=="Cedar"|
-           Lake=="Bde Maka Ska"|Lake=="Brownie"|Lake=="Minnetonka"|Lake=="Medicine"|
-           Lake=="Snail"|Lake=="Wabasso"|Lake=="Parkers"|Lake=="Smith"|Lake=="Uhlenkolts"|Lake=="Henry",
-         Depth=="Epi"|Depth=="Hypo") %>% 
-  #creating a new variable for risk level
-  mutate(Risk_Level= 
-           ifelse(Lake=="Tanners"|Lake=="Parkers"|Lake=="Brownie"|Lake=="Little Johanna"|Lake=="Henry", "Impacted",
-                  ifelse(Lake=="Medicine"|Lake=="Bde Maka Ska"|Lake=="Wabasso"|Lake=="Uhlenkolts"|Lake=="McCarrons", "At Risk", "Least Impacted")))
-    
-
-#checking all names correctly re-coded before and after removing DUPs
-unique(waterchem_clean$Lake)
-unique(waterchem_clean$Depth)
-
-#####################################################################
-
-
 #convert to long format
-waterchem_v2 <- tidyr::pivot_longer(waterchem_clean,cols=c(4:13),names_to="variable")
+waterchem_v2 <- tidyr::pivot_longer(waterchem,cols=c(4:13),names_to="variable") %>% mutate(value=as.numeric(value))
+
 glimpse(waterchem_v2)
 
 variables <- unique(waterchem_v2$variable)
 lakes <- unique(waterchem_v2$Lake)
-
-waterchem_v3 <- waterchem_clean %>% 
-  rename(chloride_mg_L="Cl- (mg/L)")
-
-
+depths <- unique(waterchem_v2$Depth)
 
 ui <- fluidPage(
   titlePanel("Water chemistry data collected as part of the LCCMR - Salty Lakes project"),
@@ -66,7 +23,7 @@ ui <- fluidPage(
     tabPanel("Site Locations",
              p("There are 12 study lakes located across the Twin Cities metro area."),
              imageOutput("map")
-             ),
+    ),
     tabPanel("Monitoring data exploration",
              #side bar layout allows you to add box on the side of the page, good for plotting
              sidebarLayout(
@@ -92,58 +49,48 @@ ui <- fluidPage(
                  plotOutput("lake_depth_boxplot")
                )
              ), #close sidebar panel
-             ),
+    ),
     tabPanel("Exploring the role of road salt on nutrients",
              sidebarLayout(
                sidebarPanel(
                  p("Select the variable you want to plot in relation to chloride concentration:"),
-                 varSelectInput(inputId = "y_variable_chloride",
-                                label= "Variable",
-                                data= waterchem_v3 %>% 
-                                  select(`Chl-a (ug/L)`, 
-                                         `SRP (ug P/L)`, 
-                                         `Total Phosphorus (ug P/L)`,
-                                         `Total Nitrogen (mg N/L)`,
-                                         `NH4 (mg N/L)`,
-                                         `NO3 + NO2 (mg N/L)`,
-                                         `DIC (mg C/L)`,
-                                         `DOC (mg C/L)`,
-                                         `DSi (mg SiO2/L)`),
-                                selected = "Chl-a (ug/L)"),
+                 selectInput("lake_chloride",label="Lake",choices=lakes,multiple=T),
+                 selectInput("variable_chloride",label="Variable",choices=variables[1:12]), #limits choices to everything but Cl
                  p("Select what depth you want to look at:"),
                  checkboxGroupInput(inputId = "depth_chloride",
                                     label= "Depth",
-                                    choices = c("Epi", "Hypo"),
-                                    selected = "Epi")
+                                    choices=depths)
                ), #close sidebar panel
                mainPanel(
                  plotOutput("chloride_plot")
                )
              ), #close sidebar layout
-             sidebarLayout(
-               sidebarPanel(
-                 p("Select the variable you want to plot in relation to chloride concentration:"),
-                 varSelectInput(inputId = "y_variable_chloride2",
-                                label= "Variable",
-                                data= waterchem_v3 %>% 
-                                  select(`Chl-a (ug/L)`, 
-                                         `SRP (ug P/L)`, 
-                                         `Total Phosphorus (ug P/L)`,
-                                         `Total Nitrogen (mg N/L)`,
-                                         `NH4 (mg N/L)`,
-                                         `NO3 + NO2 (mg N/L)`,
-                                         `DIC (mg C/L)`,
-                                         `DOC (mg C/L)`,
-                                         `DSi (mg SiO2/L)`),
-                                selected = "Chl-a (ug/L)"),
-                 ), #close sidebar panel
-               mainPanel(
-                 plotOutput("chloride_plot2")
-                 )
-               ) #close sidebar layout
-             ) #close tab panel
-  )
-)
+             # sidebarLayout(
+             #   sidebarPanel(
+             #     p("Select the variable you want to plot in relation to chloride concentration:"),
+             #     varSelectInput(inputId = "y_variable_chloride2",
+             #                    label= "Variable",
+             #                    data= waterchem %>% 
+             #                      select(`Chl-a (ug/L)`, 
+             #                             `SRP (ug P/L)`, 
+             #                             `Total Phosphorus (ug P/L)`,
+             #                             `Total Nitrogen (mg N/L)`,
+             #                             `NH4 (mg N/L)`,
+             #                             `NO3 + NO2 (mg N/L)`,
+             #                             `DIC (mg C/L)`,
+             #                             `DOC (mg C/L)`,
+             #                             `DSi (mg SiO2/L)`),
+             #                    selected = "Chl-a (ug/L)"),
+             #     ), #close sidebar panel
+             #   mainPanel(
+             #     plotOutput("chloride_plot2")
+             #     )
+             #   ) #close sidebar layout
+             
+             
+    ) #close tab panel
+  ) #close all panels
+) #close UI
 
 server <- function(input, output, session) {
   output$map <- renderImage({
@@ -179,22 +126,30 @@ server <- function(input, output, session) {
       theme_classic(base_size=14)
   })
   
+  chloride_data <- reactive({
+    waterchem_v2 %>%
+      pivot_wider(names_from=variable,values_from=value) %>%
+      pivot_longer(!c(Lake,Date,Depth,`Cl- (mg/L)`),names_to="variable") %>%
+      dplyr::filter(Lake %in% input$lake_chloride,
+                    variable %in% input$variable_chloride,
+                    Depth %in% input$depth_chloride) 
+    
+  })
+  
   output$chloride_plot <- renderPlot({
-    ggplot(data= waterchem_v3 %>% filter(Depth %in% input$depth_chloride),
-           aes(x=chloride_mg_L, y=!!input$y_variable_chloride, color=Depth))+
-      geom_point()+
+    ggplot(chloride_data(),aes(x=`Cl- (mg/L)`,y=value,color=Lake,shape=Depth))+
+      geom_point(size=3)+
       theme_classic(base_size=14)
   })
   
-  output$chloride_plot2 <- renderPlot({
-    ggplot(data= waterchem_v3,
-           aes(x=chloride_mg_L, y=!!input$y_variable_chloride2, color=Depth))+
-      geom_point()+
-      facet_wrap(~Risk_Level, nrow=2) +
-      theme_classic(base_size=14)
-  }) #trying to make a plot faceted by risk level, doesn't work yet
+  # output$chloride_plot2 <- renderPlot({
+  #   ggplot(data= waterchem_v2,
+  #          aes(x=chloride_mg_L, y=!!input$y_variable_chloride2, color=Depth))+
+  #     geom_point()+
+  #     facet_wrap(~Risk_Level, nrow=2) +
+  #     theme_classic(base_size=14)
+  # }) #trying to make a plot faceted by risk level, doesn't work yet
   
 }
 
 shinyApp(ui, server)
-
