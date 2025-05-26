@@ -76,7 +76,7 @@ ui <- fluidPage(
                                          `SRP (ug P/L)`,
                                          `Total Phosphorus (ug P/L)`,
                                          `Total Nitrogen (mg N/L)`,
-                                         `NH4 (mg N/L)`,
+                                         `NH3 (mg N/L)`,
                                          `NO3 + NO2 (mg N/L)`,
                                          `DIC (mg C/L)`,
                                          `DOC (mg C/L)`,
@@ -130,7 +130,7 @@ server <- function(input, output, session) {
   chloride_data <- reactive({
     waterchem_v2 %>%
       pivot_wider(names_from=variable,values_from=value) %>%
-      pivot_longer(!c(lake,Date,Depth,`Cl- (mg/L)`),names_to="variable") %>%
+      pivot_longer(!c(lake,Date,Depth,`Cl- (ug/L)`),names_to="variable") %>%
       dplyr::filter(lake %in% input$lake_chloride,
                     variable %in% input$variable_chloride,
                     Depth %in% input$depth_chloride) 
@@ -138,14 +138,14 @@ server <- function(input, output, session) {
   })
   
   output$chloride_plot <- renderPlot({
-    ggplot(chloride_data(),aes(x=`Cl- (mg/L)`,y=value,color=lake,shape=Depth))+
+    ggplot(chloride_data(),aes(x=`Cl- (ug/L)`,y=value,color=lake,shape=Depth))+
       geom_point(size=3)+
       theme_classic(base_size=14)
   })
   
   output$chloride_plot2 <- renderPlot({
     ggplot(data= waterchem,
-           aes(x=`Cl- (mg/L)`, y=!!input$y_variable_chloride2, color=Depth))+
+           aes(x=`Cl- (ug/L)`, y=!!input$y_variable_chloride2, color=Depth))+
       geom_point()+
       facet_wrap(~Risk_Level, nrow=2) +
       theme_classic(base_size=14)
