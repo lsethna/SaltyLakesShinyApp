@@ -65,7 +65,7 @@ ui <- fluidPage(
                mainPanel(
                  plotOutput("chloride_plot")
                )
-             ) #close sidebar layout
+             ), #close sidebar layout
              sidebarLayout(
                sidebarPanel(
                  p("Select the variable you want to plot in relation to chloride concentration:"),
