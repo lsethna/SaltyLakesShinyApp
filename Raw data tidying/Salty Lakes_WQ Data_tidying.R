@@ -35,18 +35,18 @@ dplyr::glimpse(WQ_Data_24)
 #merge together
 WQ_Data <- WQ_Data_23 %>% 
   #keep only monitoring data
-  select(`Sample ID`,Depth,`Collection Date`,`Chl-a (ug/L)`:`Cl- (mg/L)`) %>%
+  select(`Sample ID`,Depth,`Collection Date`,`Chl-a (ug/L)`:`Cl- (ug/L)`) %>%
   #combine
   bind_rows(WQ_Data_24) %>%
   #remove NA columns
-  select(`Sample ID`:`Cl- (mg/L)`) %>%
+  select(`Sample ID`:`Cl- (ug/L)`) %>%
   #remove rows with NA Sample ID
   filter(!is.na(`Sample ID`))
   
 glimpse(WQ_Data)
 
 #all nutrient data should be numeric/double
-WQ_Data <- WQ_Data %>% mutate_at(vars(`Chl-a (ug/L)`:`Cl- (mg/L)`), as.numeric)
+WQ_Data <- WQ_Data %>% mutate_at(vars(`Chl-a (ug/L)`:`Cl- (ug/L)`), as.numeric)
 
 #remove first row with no data
 WQ_Data <- WQ_Data[2:382,]
@@ -117,12 +117,12 @@ perc_err <- dup_check %>%
     srp_perc_err = percent_error(`SRP (ug P/L)`),
     tp_perc_err = percent_error(`Total Phosphorus (ug P/L)`),
     tn_perc_err = percent_error(`Total Nitrogen (mg N/L)`),
-    nh4_perc_err = percent_error(`NH4 (mg N/L)`),
+    nh4_perc_err = percent_error(`NH3 (mg N/L)`),
     no3_perc_err = percent_error(`NO3 + NO2 (mg N/L)`),
     dic_perc_err = percent_error(`DIC (mg C/L)`),
     doc_perc_err = percent_error(`DOC (mg C/L)`),
     dsi_perc_err = percent_error(`DSi (mg SiO2/L)`),
-    cl_perc_err = percent_error(`Cl- (mg/L)`),
+    cl_perc_err = percent_error(`Cl- (ug/L)`),
   )
 
 #some of these variables are well over 10% different - what to do?
@@ -152,7 +152,7 @@ glimpse(WQ_Data)
 
 #export without the dups
 WQ_Data_clean <- WQ_Data %>% filter(dup=="") %>%
-  select(lake,Risk_Level,Region,`Collection Date`,Depth,`Chl-a (ug/L)`:`Cl- (mg/L)`) %>%
+  select(lake,Risk_Level,Region,`Collection Date`,Depth,`Chl-a (ug/L)`:`Cl- (ug/L)`) %>%
   rename(Date=`Collection Date`)
 glimpse(WQ_Data_clean)
 
