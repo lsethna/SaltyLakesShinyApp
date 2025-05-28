@@ -49,14 +49,14 @@ ui <- fluidPage(
                mainPanel(
                  plotOutput("lake_depth_boxplot")
                )
-             ) #close sidebar panel
+             ) #close sidebar layout
     ),
     tabPanel("Exploring the role of road salt by lake",
              sidebarLayout(
                sidebarPanel(
                  p("Select the variable you want to plot in relation to chloride concentration:"),
                  selectInput("lake_chloride",label="Lake",choices=lakes,multiple=T),
-                 selectInput("variable_chloride",label="Variable",choices=variables[1:14]), #limits choices to everything but Cl
+                 selectInput("variable_chloride",label="Variable", data=waterchem, choices=variables[1:14]), #limits choices to everything but Cl
                  p("Select what depth you want to look at:"),
                  checkboxGroupInput(inputId = "depth_chloride",
                                     label= "Depth",
@@ -108,7 +108,7 @@ ui <- fluidPage(
                mainPanel(
                  plotOutput("region_boxplot")
                )
-             ) #close sidebar panel
+             ), #close sidebar layout
     )
   ) #close all panels
 ) #close UI
