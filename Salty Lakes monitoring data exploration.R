@@ -38,7 +38,7 @@ ui <- fluidPage(
                mainPanel(
                  plotOutput("timeseriesplot")
                )
-             ), #close sidebar panel
+             ), #close sidebar layout
              sidebarLayout(
                sidebarPanel(
                  p("Select the variable you want to compare between lakes and depths:"),
@@ -56,7 +56,7 @@ ui <- fluidPage(
                sidebarPanel(
                  p("Select the variable you want to plot in relation to chloride concentration:"),
                  selectInput("lake_chloride",label="Lake",choices=lakes,multiple=T),
-                 selectInput("variable_chloride",label="Variable", data=waterchem, choices=variables[1:14]), #limits choices to everything but Cl
+                 selectInput("variable_chloride",label="Variable", choices=variables[1:14]), #limits choices to everything but Cl
                  p("Select what depth you want to look at:"),
                  checkboxGroupInput(inputId = "depth_chloride",
                                     label= "Depth",
@@ -64,6 +64,15 @@ ui <- fluidPage(
                ), #close sidebar panel
                mainPanel(
                  plotOutput("chloride_plot")
+               )
+             ), #close sidebar layout
+             sidebarLayout(
+               sidebarPanel(
+                 p("Select the variable you want to plot:"),
+                 selectInput("region_variable",label="Variable",choices=variables),
+               ),
+               mainPanel(
+                 plotOutput("region_boxplot")
                )
              ) #close sidebar layout
     ), #close tab panel
@@ -99,16 +108,27 @@ ui <- fluidPage(
                )
              ) #close sidebar layout
     ), #close tab panel
-    tabPanel("Exploring the role of road salt by region",
+    tabPanel("Exploring the role of road salt by season",
              sidebarLayout(
                sidebarPanel(
-                 p("Select the variable you want to plot:"),
-                 selectInput("region_variable",label="Variable",choices=variables),
+                 p("Select what lake(s) to look at:"),
+                 selectInput("chloride_lake",label="Lake",choices=lakes,multiple=T)
                ),
                mainPanel(
-                 plotOutput("region_boxplot")
+                 plotOutput("chloride_timeseries")
                )
              ), #close sidebar layout
+             sidebarLayout(
+               sidebarPanel(
+                 p("Select the variable you want to plot over time:"),
+                 selectInput("season_variable",label="Variable",choices=variables),
+                 p("Select what lake(s) to look at:"),
+                 selectInput("season_lake",label="Lake",choices=lakes,multiple=T)
+               ),
+               mainPanel(
+                 plotOutput("season_timeseries")
+               )
+             ) #close sidebar layout
     )
   ) #close all panels
 ) #close UI
@@ -156,12 +176,28 @@ server <- function(input, output, session) {
                     Depth %in% input$depth_chloride) 
     
   })
-  
   output$chloride_plot <- renderPlot({
     ggplot(chloride_data(),aes(x=`Cl- (ug/L)`,y=value,color=lake,shape=Depth))+
       geom_point(size=3)+
       theme_classic(base_size=14)
   })
+  
+  region_data <- reactive({
+    waterchem_v2 %>%
+      mutate(Region = fct_relevel(Region, 
+                                  "North Metro", "East Metro", "South Metro", "West Metro", "Central MN"),
+             Risk_Level = fct_relevel(Risk_Level, 
+                                      "Impacted", "At Risk", "Least Impacted")) %>%
+      dplyr::filter(variable %in% input$region_variable)
+  })
+  output$region_boxplot <- renderPlot({
+    ggplot(region_data(),aes(y=value,x=lake, color=Risk_Level))+
+      geom_boxplot()+
+      facet_wrap(~Region, scales="free_x", nrow=2) +
+      theme_classic(base_size=14) +
+      theme(axis.text.x=element_text(angle=40, hjust=1)) +
+      ylab("Value") + xlab("") 
+  }) 
   
   risk_level_data <- reactive({
     waterchem_v2 %>%
@@ -169,9 +205,8 @@ server <- function(input, output, session) {
                                 "Impacted", "At Risk", "Least Impacted")) %>%
       dplyr::filter(variable %in% input$y_variable_risk_level)
   })
-  
   output$risk_level_boxplot <- renderPlot({
-    ggplot(risk_level_data(),aes(y=value,x=Risk_Level, color=Risk_Level))+
+    ggplot(risk_level_data(),aes(y=value,x=Risk_Level, color=Depth))+
       geom_boxplot()+
       theme_classic(base_size=14) +
       ylab("Value") + xlab("Risk Level")
@@ -187,23 +222,31 @@ server <- function(input, output, session) {
       theme_classic(base_size=14)
   })
   
-  region_data <- reactive({
+  chloride_timeseries_data <- reactive({
     waterchem_v2 %>%
-      mutate(Region = fct_relevel(Region, 
-                                      "North Metro", "East Metro", "South Metro", "West Metro", "Central MN")) %>%
-      dplyr::filter(variable %in% input$region_variable)
+      dplyr::filter(lake %in% input$chloride_lake)
+  })
+  output$chloride_timeseries <- renderPlot({
+    ggplot(chloride_timeseries_data(),aes(x=Date,y=`Cl- (ug/L)`))+
+      geom_point(size=1)+
+      geom_smooth()+
+      theme_classic(base_size=14)
   })
   
-  output$region_boxplot <- renderPlot({
-    ggplot(region_data(),aes(y=value,x=lake, color=lake))+
-      geom_boxplot()+
-      facet_wrap(~Region, scales="free_x", nrow=2) +
-      theme_classic(base_size=14) +
-      theme(axis.text.x=element_text(angle=40, hjust=1)) +
-      ylab("Value") + xlab("") 
-  })  
+  season_data <- reactive({
+    waterchem_v2 %>%
+      dplyr::filter(variable %in% input$season_variable,
+                    lake %in% input$season_lake)
+  })
+  output$season_timeseries <- renderPlot({
+    ggplot(season_data(),aes(x=Date,y=value))+
+      geom_point(size=1)+
+      geom_smooth()+
+      theme_classic(base_size=14)
+  })
   
   
 }
 
 shinyApp(ui, server)
+
