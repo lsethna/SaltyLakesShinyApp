@@ -54,7 +54,9 @@ ui <- fluidPage(
   titlePanel("Water chemistry data collected as part of the LCCMR - Salty Lakes project"),
   tabsetPanel(
     tabPanel("Site Locations",
-             p("There are 12 study lakes located across the Twin Cities metro area."),
+             p("The Salty Lakes project monitored 12 lakes within the Twin Cities Metro area and 3 lakes outside the city of Alexandria.
+                Each of the study lakes represented a gradient of salinity and impairment risk due to salt.
+                The data shown as part of this project are from water quality monitoring efforts between June 2023 and January 2025 and help scientists understand how road salt impacts lake water quality and ecosystem function."),
              imageOutput("map")
     ),
     tabPanel("Monitoring data exploration",
@@ -88,7 +90,7 @@ ui <- fluidPage(
                sidebarPanel(
                  p("Select the variable you want to plot in relation to chloride concentration:"),
                  selectInput("lake_chloride",label="Lake",choices=lakes,multiple=T),
-                 selectInput("variable_chloride",label="Variable", choices=variables[1:14]), #limits choices to everything but Cl
+                 selectInput("variable_chloride",label="Variable", choices=variables[1:9]), #limits choices to everything but Cl
                  p("Select what depth you want to look at:"),
                  checkboxGroupInput(inputId = "depth_chloride",
                                     label= "Depth",
@@ -170,8 +172,8 @@ server <- function(input, output, session) {
     list(
       src = file.path("MinnesotaMap_SaltyLakes_highlight.png"),
       contentType = "png",
-      width = 1225,
-      height = 1095
+      width = 808.5,
+      height = 722.7
     )
   }, deleteFile = FALSE)
   
@@ -194,14 +196,15 @@ server <- function(input, output, session) {
   })
   
   output$lake_depth_boxplot <- renderPlot({
-    ggplot(depth_data(),aes(y=value,x=lake,color=Depth))+
+    ggplot(depth_data(),aes(y=value,x=lake,fill=Depth))+
       geom_boxplot()+
+      scale_fill_manual(values=c("#c1e7ff","#004c6d"))+
       theme_classic(base_size=14)
   })
   
   chloride_data <- reactive({
     waterchem_long %>%
-      pivot_wider(names_from=variable,values_from=value) %>%
+      pivot_wider(names_from=variable,values_from=value,values_fn=mean) %>%
       pivot_longer(!c(lake,Risk_Level,Region,Date,Depth,`Cl- (ug/L)`),names_to="variable") %>%
       dplyr::filter(lake %in% input$lake_chloride,
                     variable %in% input$variable_chloride,
@@ -223,12 +226,16 @@ server <- function(input, output, session) {
       dplyr::filter(variable %in% input$region_variable)
   })
   output$region_boxplot <- renderPlot({
-    ggplot(region_data(),aes(y=value,x=lake, color=Risk_Level))+
-      geom_boxplot()+
-      facet_wrap(~Region, scales="free_x", nrow=2) +
+    ggplot(region_data(),aes(y=value,x=lake))+
+      geom_boxplot(aes(fill=Risk_Level,alpha=Depth),outliers=F)+
+      scale_fill_manual(values=c("#bc5090","#ffa600","#003f5c"))+
+      guides(alpha=guide_legend(override.aes=list(fill=hcl(c(15,195),100,0,alpha=c(0.2,0.7)),
+                                                  colour=NA))) +
+      scale_alpha_manual(values=c(0.2,1))+
+      facet_wrap(~Region, scales="free", nrow=2) +
       theme_classic(base_size=14) +
-      theme(axis.text.x=element_text(angle=40, hjust=1)) +
-      ylab("Value") + xlab("") 
+      theme(axis.text.x=element_text(angle=40, hjust=1),axis.title.x=element_blank()) +
+      ylab(input$region_variable)
   }) 
   
   risk_level_data <- reactive({
