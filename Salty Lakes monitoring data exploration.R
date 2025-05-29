@@ -2,21 +2,53 @@ rm(list=ls())
 # getwd()
 # setwd("C:/Users/lsethna_smm/Documents/GitHub/SaltyLakesShinyApp")
 
-librarian::shelf(readxl,shiny,tidyverse)
+librarian::shelf(readxl,zoo,shiny,tidyverse,tidyr)
 
 #read in cleaned dataset
 waterchem <- read_csv("Salty_2023_2024_monitoring_data_clean.csv") %>% 
   select(!`...1`)
 glimpse(waterchem)
 
+#plot data to check for outliers
+waterchem %>% tidyr::pivot_longer(cols=c(6:15),names_to="variable") %>% mutate(value=as.numeric(value)) %>%
+  ggplot(aes(x=Date,y=value))+
+  geom_point()+
+  facet_wrap(~variable,scales="free")
+  
+# remove outliers
+# Consider these columns for outlier removal 
+cols_to_consider <- colnames(waterchem)[6:15]
+sd_limit <- 3 #will count anything with a sd>3 to be an outlier
+#create function that filters outliers based on sd_limit
+remove_outlier_values <- function(data_to_filter, cols = cols_to_consider, limit = sd_limit){
+  # Copy the data to avoid modifying the original
+  data_filtered <- data_to_filter
+    # Loop through each specified column
+  for (col in cols) {
+    # Compute z-scores
+    z_scores <- abs((data_to_filter[[col]] - mean(data_to_filter[[col]], na.rm = TRUE)) / 
+                      sd(data_to_filter[[col]], na.rm = TRUE))
+        # Replace values exceeding the limit with NA
+    data_filtered[[col]][z_scores > limit] <- NA
+  }
+    return(data_filtered)
+}
+#run function to remove outliers from data columns
+waterchem_v2 <- remove_outlier_values(waterchem)
+
+#check outlier removal
+waterchem_v2 %>% tidyr::pivot_longer(cols=c(6:15),names_to="variable") %>% mutate(value=as.numeric(value)) %>%
+  ggplot(aes(x=Date,y=value))+
+  geom_point()+
+  facet_wrap(~variable,scales="free")
+
 #convert to long format
-waterchem_v2 <- tidyr::pivot_longer(waterchem,cols=c(6:15),names_to="variable") %>% mutate(value=as.numeric(value))
+waterchem_long <- tidyr::pivot_longer(waterchem_v2,cols=c(6:15),names_to="variable") %>% mutate(value=as.numeric(value))
+glimpse(waterchem_long)
 
-glimpse(waterchem_v2)
-
-variables <- unique(waterchem_v2$variable)
-lakes <- unique(waterchem_v2$lake)
-depths <- unique(waterchem_v2$Depth)
+variables <- unique(waterchem_long$variable)
+lakes <- unique(waterchem_long$lake)
+depths <- unique(waterchem_long$Depth)
 
 ui <- fluidPage(
   titlePanel("Water chemistry data collected as part of the LCCMR - Salty Lakes project"),
@@ -136,15 +168,15 @@ ui <- fluidPage(
 server <- function(input, output, session) {
   output$map <- renderImage({
     list(
-      src = file.path("Picture1.png"),
+      src = file.path("MinnesotaMap_SaltyLakes_highlight.png"),
       contentType = "png",
-      width = 1000,
-      height = 500
+      width = 1225,
+      height = 1095
     )
   }, deleteFile = FALSE)
   
   time_data <- reactive({
-    waterchem_v2 %>%
+    waterchem_long %>%
       dplyr::filter(variable %in% input$time_variable,
                     lake %in% input$time_lake)
   })
@@ -156,7 +188,7 @@ server <- function(input, output, session) {
   })
   
   depth_data <- reactive({
-    waterchem_v2 %>%
+    waterchem_long %>%
       dplyr::filter(variable %in% input$depth_variable,
                     lake %in% input$depth_lake)
   })
@@ -168,7 +200,7 @@ server <- function(input, output, session) {
   })
   
   chloride_data <- reactive({
-    waterchem_v2 %>%
+    waterchem_long %>%
       pivot_wider(names_from=variable,values_from=value) %>%
       pivot_longer(!c(lake,Risk_Level,Region,Date,Depth,`Cl- (ug/L)`),names_to="variable") %>%
       dplyr::filter(lake %in% input$lake_chloride,
@@ -183,7 +215,7 @@ server <- function(input, output, session) {
   })
   
   region_data <- reactive({
-    waterchem_v2 %>%
+    waterchem_long %>%
       mutate(Region = fct_relevel(Region, 
                                   "North Metro", "East Metro", "South Metro", "West Metro", "Central MN"),
              Risk_Level = fct_relevel(Risk_Level, 
@@ -200,7 +232,7 @@ server <- function(input, output, session) {
   }) 
   
   risk_level_data <- reactive({
-    waterchem_v2 %>%
+    waterchem_long %>%
       mutate(Risk_Level = fct_relevel(Risk_Level, 
                                 "Impacted", "At Risk", "Least Impacted")) %>%
       dplyr::filter(variable %in% input$y_variable_risk_level)
@@ -223,7 +255,7 @@ server <- function(input, output, session) {
   })
   
   chloride_timeseries_data <- reactive({
-    waterchem_v2 %>%
+    waterchem_long %>%
       dplyr::filter(lake %in% input$chloride_lake)
   })
   output$chloride_timeseries <- renderPlot({
@@ -234,7 +266,7 @@ server <- function(input, output, session) {
   })
   
   season_data <- reactive({
-    waterchem_v2 %>%
+    waterchem_long %>%
       dplyr::filter(variable %in% input$season_variable,
                     lake %in% input$season_lake)
   })
