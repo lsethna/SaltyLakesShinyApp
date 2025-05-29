@@ -6,7 +6,7 @@ rm(list=ls())
 # getwd()
 # setwd("C:/Users/lsethna_smm/Documents/GitHub/SaltyLakesShinyApp")
 
-librarian::shelf(readxl,zoo,shiny,tidyverse,tidyr)
+librarian::shelf(readxl,zoo,shiny,tidyverse,tidyr,hydroTSM)
 
 #read in cleaned dataset
 waterchem <- read_csv("Salty_2023_2024_monitoring_data_clean.csv") %>% 
@@ -74,12 +74,14 @@ ui <- fluidPage(
              ), #close sidebar layout
              sidebarLayout(
                sidebarPanel(
-                 imageOutput("diagram")),
-               mainPanel(
                  p("We care about salt concentrations (here, as chloride) in lakes because it disrupts the way in which lakes process nutrients 
                  and can negatively impact water quality. This is because salt increases the density of water, creating a layer of dense, salty 
                  water at the bottom of lakes that does not mix with the rest of the lake. Contaminants, excess nutrients, and salt all remain 
-                 in the bottom waters, called the hypolimnion.")) #close main panel
+                 in the bottom waters, called the hypolimnion.")
+                 ), #close sidebar panel
+               mainPanel(
+                 imageOutput("diagram")
+                 ) #close main panel
                
             ) #close sidebar
     ), # close tab
@@ -157,7 +159,7 @@ ui <- fluidPage(
              sidebarLayout(
                sidebarPanel(
                  p("Select what lake(s) to look at:"),
-                 selectInput("chloride_lake",label="Lake",choices=lakes,multiple=T)
+                 selectInput("chloride_lake",label="Lake",choices=lakes,multiple=F)
                ),
                mainPanel(
                  plotOutput("chloride_timeseries")
@@ -185,8 +187,8 @@ server <- function(input, output, session) {
     list(
       src = file.path("MinnesotaMap_SaltyLakes_highlight.png"),
       contentType = "png",
-      width = 808.5,
-      height = 722.7
+      width = 404,
+      height = 361
     )
   }, deleteFile = FALSE)
   
@@ -194,8 +196,8 @@ server <- function(input, output, session) {
     list(
       src = file.path("saline strat diagram.png"),
       contentType = "png",
-      width = 697,
-      height = 548.5
+      width = 349,
+      height = 274
     )
   }, deleteFile = FALSE)
 
@@ -296,26 +298,33 @@ server <- function(input, output, session) {
   
   chloride_timeseries_data <- reactive({
     waterchem_long %>%
+      mutate(season=hydroTSM::time2season(Date,out.fmt="seasons")) %>%
       filter(variable=="Cl- (ug/L)") %>%
       dplyr::filter(lake %in% input$chloride_lake)
   })
   output$chloride_timeseries <- renderPlot({
     ggplot(chloride_timeseries_data(),aes(x=Date,y=value))+
-      geom_point(size=1)+
-      geom_smooth()+
+      geom_point(aes(color=season),size=3)+
+      scale_color_manual(values=c("#b87e39","#3bc54f","#de4f53","#4b98de"))+
+      geom_smooth(se=F,color="black")+
+      scale_x_date(date_labels = "%b")+
       ylab("Cl- (ug/L)")+
       theme_classic(base_size=14)
   })
   
   season_data <- reactive({
     waterchem_long %>%
+      mutate(season=hydroTSM::time2season(Date,out.fmt="seasons")) %>%
       dplyr::filter(variable %in% input$season_variable,
                     lake %in% input$chloride_lake)
   })
   output$season_timeseries <- renderPlot({
     ggplot(season_data(),aes(x=Date,y=value))+
-      geom_point(size=1)+
-      geom_smooth()+
+      geom_point(aes(color=season),size=3)+
+      scale_color_manual(values=c("#b87e39","#3bc54f","#de4f53","#4b98de"))+
+      geom_smooth(se=F,color="black")+
+      scale_x_date(date_labels = "%b")+
+      ylab("Cl- (ug/L)")+
       theme_classic(base_size=14)
   })
   
