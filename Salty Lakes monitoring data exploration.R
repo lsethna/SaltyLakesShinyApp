@@ -1,3 +1,7 @@
+### -------------------------------------------------------------------------------------------------- ###
+### -------------------------------------------  Housekeeping ---------------------------------------- ###
+### -------------------------------------------------------------------------------------------------- ###
+
 rm(list=ls())
 # getwd()
 # setwd("C:/Users/lsethna_smm/Documents/GitHub/SaltyLakesShinyApp")
@@ -50,6 +54,10 @@ variables <- unique(waterchem_long$variable)
 lakes <- unique(waterchem_long$lake)
 depths <- unique(waterchem_long$Depth)
 
+### -------------------------------------------------------------------------------------------------- ###
+### ------------------------------------- Set up User Interface -------------------------------------- ###
+### -------------------------------------------------------------------------------------------------- ###
+
 ui <- fluidPage(
   titlePanel("Water chemistry data collected as part of the LCCMR - Salty Lakes project"),
   tabsetPanel(
@@ -85,7 +93,7 @@ ui <- fluidPage(
                )
              ) #close sidebar layout
     ),
-    tabPanel("Exploring the role of road salt by lake",
+    tabPanel("Exploring the role of road salt across lakes, regions, and risk levels",
              sidebarLayout(
                sidebarPanel(
                  p("Select the variable you want to plot in relation to chloride concentration:"),
@@ -102,17 +110,6 @@ ui <- fluidPage(
              ), #close sidebar layout
              sidebarLayout(
                sidebarPanel(
-                 p("Select the variable you want to plot:"),
-                 selectInput("region_variable",label="Variable",choices=variables),
-               ),
-               mainPanel(
-                 plotOutput("region_boxplot")
-               )
-             ) #close sidebar layout
-    ), #close tab panel
-    tabPanel("Exploring the role of road salt by risk level",
-             sidebarLayout(
-               sidebarPanel(
                  p("Select the variable you want to compare between risk levels:"),
                  selectInput("y_variable_risk_level",label="Variable",choices=variables),
                ),
@@ -123,22 +120,19 @@ ui <- fluidPage(
              sidebarLayout(
                sidebarPanel(
                  p("Select the variable you want to plot in relation to chloride concentration:"),
-                 varSelectInput(inputId = "y_variable_chloride2",
-                                label= "Variable",
-                                data= waterchem %>%
-                                  select(`Chl-a (ug/L)`,
-                                         `SRP (ug P/L)`,
-                                         `Total Phosphorus (ug P/L)`,
-                                         `Total Nitrogen (mg N/L)`,
-                                         `NH3 (mg N/L)`,
-                                         `NO3 + NO2 (mg N/L)`,
-                                         `DIC (mg C/L)`,
-                                         `DOC (mg C/L)`,
-                                         `DSi (mg SiO2/L)`),
-                                selected = "Chl-a (ug/L)"),
+                 selectInput("y_variable_chloride2",label= "Variable",choices=variables[1:9]),
                ), #close sidebar panel
                mainPanel(
                  plotOutput("chloride_plot2")
+               )
+             ), #close sidebar layout
+             sidebarLayout(
+               sidebarPanel(
+                 p("Select the variable you want to plot:"),
+                 selectInput("region_variable",label="Variable",choices=variables),
+               ),
+               mainPanel(
+                 plotOutput("region_boxplot")
                )
              ) #close sidebar layout
     ), #close tab panel
@@ -166,6 +160,10 @@ ui <- fluidPage(
     )
   ) #close all panels
 ) #close UI
+
+### -------------------------------------------------------------------------------------------------- ###
+### ----------------------------------------- Set up Server ------------------------------------------ ###
+### -------------------------------------------------------------------------------------------------- ###
 
 server <- function(input, output, session) {
   output$map <- renderImage({
@@ -225,6 +223,7 @@ server <- function(input, output, session) {
                                       "Impacted", "At Risk", "Least Impacted")) %>%
       dplyr::filter(variable %in% input$region_variable)
   })
+  
   output$region_boxplot <- renderPlot({
     ggplot(region_data(),aes(y=value,x=lake))+
       geom_boxplot(aes(fill=Risk_Level,alpha=Depth),outliers=F)+
@@ -232,10 +231,13 @@ server <- function(input, output, session) {
       guides(alpha=guide_legend(override.aes=list(fill=hcl(c(15,195),100,0,alpha=c(0.2,0.7)),
                                                   colour=NA))) +
       scale_alpha_manual(values=c(0.2,1))+
+      ylab(input$region_variable)+
       facet_wrap(~Region, scales="free", nrow=2) +
       theme_classic(base_size=14) +
-      theme(axis.text.x=element_text(angle=40, hjust=1),axis.title.x=element_blank()) +
-      ylab(input$region_variable)
+      theme(axis.text.x=element_text(angle=40, hjust=1),
+            axis.title.x=element_blank(),
+            strip.background = element_blank())
+
   }) 
   
   risk_level_data <- reactive({
@@ -251,13 +253,19 @@ server <- function(input, output, session) {
       ylab("Value") + xlab("Risk Level")
   })
   
+  risk_level_chloride_data <- reactive({
+    waterchem_long %>%
+      mutate(Risk_Level = fct_relevel(Risk_Level, 
+                                      "Impacted", "At Risk", "Least Impacted")) %>%
+      pivot_wider(names_from=variable,values_from=value,values_fn=mean) %>%
+      pivot_longer(!c(lake,Risk_Level,Region,Date,Depth,`Cl- (ug/L)`),names_to="variable") %>%
+      dplyr::filter(variable %in% input$y_variable_chloride2)
+  })
+  
   output$chloride_plot2 <- renderPlot({
-    ggplot(data= waterchem %>%
-             mutate(Risk_Level = fct_relevel(Risk_Level, 
-                                             "Impacted", "At Risk", "Least Impacted")),
-           aes(x=`Cl- (ug/L)`, y=!!input$y_variable_chloride2, color=Depth))+
+    ggplot(risk_level_chloride_data(),aes(x=`Cl- (ug/L)`, y=value, color=Depth))+
       geom_point()+
-      facet_wrap(~Risk_Level, nrow=2) +
+      facet_wrap(~Risk_Level, ncol=3) +
       theme_classic(base_size=14)
   })
   
@@ -266,7 +274,7 @@ server <- function(input, output, session) {
       dplyr::filter(lake %in% input$chloride_lake)
   })
   output$chloride_timeseries <- renderPlot({
-    ggplot(chloride_timeseries_data(),aes(x=Date,y=`Cl- (ug/L)`))+
+    ggplot(chloride_timeseries_data(),aes(x=Date,y=value))+
       geom_point(size=1)+
       geom_smooth()+
       theme_classic(base_size=14)
@@ -286,6 +294,10 @@ server <- function(input, output, session) {
   
   
 }
+
+### -------------------------------------------------------------------------------------------------- ###
+### ------------------------------------------- Launch App ------------------------------------------- ###
+### -------------------------------------------------------------------------------------------------- ###
 
 shinyApp(ui, server)
 
