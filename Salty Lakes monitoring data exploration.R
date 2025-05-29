@@ -61,12 +61,29 @@ depths <- unique(waterchem_long$Depth)
 ui <- fluidPage(
   titlePanel("Water chemistry data collected as part of the LCCMR - Salty Lakes project"),
   tabsetPanel(
-    tabPanel("Site Locations",
-             p("The Salty Lakes project monitored 12 lakes within the Twin Cities Metro area and 3 lakes outside the city of Alexandria.
+    tabPanel("About",
+             #side bar layout allows you to add box on the side of the page, good for plotting
+             sidebarLayout(
+               sidebarPanel(
+               p("The Salty Lakes project monitored 12 lakes within the Twin Cities Metro area and 3 lakes outside the city of Alexandria.
                 Each of the study lakes represented a gradient of salinity and impairment risk due to salt.
-                The data shown as part of this project are from water quality monitoring efforts between June 2023 and January 2025 and help scientists understand how road salt impacts lake water quality and ecosystem function."),
-             imageOutput("map")
-    ),
+                The data shown as part of this project are from water quality monitoring efforts between June 2023 and January 2025 and help 
+                 scientists understand how road salt impacts lake water quality and ecosystem function.")),
+               mainPanel(imageOutput("map"))
+  
+             ), #close sidebar layout
+             sidebarLayout(
+               sidebarPanel(
+                 imageOutput("diagram")),
+               mainPanel(
+                 p("We care about salt concentrations (here, as chloride) in lakes because it disrupts the way in which lakes process nutrients 
+                 and can negatively impact water quality. This is because salt increases the density of water, creating a layer of dense, salty 
+                 water at the bottom of lakes that does not mix with the rest of the lake. Contaminants, excess nutrients, and salt all remain 
+                 in the bottom waters, called the hypolimnion.")) #close main panel
+               
+            ) #close sidebar
+    ), # close tab
+    
     tabPanel("Monitoring data exploration",
              #side bar layout allows you to add box on the side of the page, good for plotting
              sidebarLayout(
@@ -149,9 +166,7 @@ ui <- fluidPage(
              sidebarLayout(
                sidebarPanel(
                  p("Select the variable you want to plot over time:"),
-                 selectInput("season_variable",label="Variable",choices=variables),
-                 p("Select what lake(s) to look at:"),
-                 selectInput("season_lake",label="Lake",choices=lakes,multiple=T)
+                 selectInput("season_variable",label="Variable",choices=variables)
                ),
                mainPanel(
                  plotOutput("season_timeseries")
@@ -175,6 +190,15 @@ server <- function(input, output, session) {
     )
   }, deleteFile = FALSE)
   
+  output$diagram <- renderImage({
+    list(
+      src = file.path("saline strat diagram.png"),
+      contentType = "png",
+      width = 697,
+      height = 548.5
+    )
+  }, deleteFile = FALSE)
+
   time_data <- reactive({
     waterchem_long %>%
       dplyr::filter(variable %in% input$time_variable,
@@ -266,24 +290,27 @@ server <- function(input, output, session) {
     ggplot(risk_level_chloride_data(),aes(x=`Cl- (ug/L)`, y=value, color=Depth))+
       geom_point()+
       facet_wrap(~Risk_Level, ncol=3) +
-      theme_classic(base_size=14)
+      theme_classic(base_size=14)+
+      theme(strip.background=element_blank())
   })
   
   chloride_timeseries_data <- reactive({
     waterchem_long %>%
+      filter(variable=="Cl- (ug/L)") %>%
       dplyr::filter(lake %in% input$chloride_lake)
   })
   output$chloride_timeseries <- renderPlot({
     ggplot(chloride_timeseries_data(),aes(x=Date,y=value))+
       geom_point(size=1)+
       geom_smooth()+
+      ylab("Cl- (ug/L)")+
       theme_classic(base_size=14)
   })
   
   season_data <- reactive({
     waterchem_long %>%
       dplyr::filter(variable %in% input$season_variable,
-                    lake %in% input$season_lake)
+                    lake %in% input$chloride_lake)
   })
   output$season_timeseries <- renderPlot({
     ggplot(season_data(),aes(x=Date,y=value))+
