@@ -11,45 +11,12 @@ library(tidyr)
 library(hydroTSM)
 
 #read in cleaned dataset
-waterchem <- read_csv("Salty_2023_2024_monitoring_data_clean.csv") %>% 
+waterchem <- read_csv("Salty_2023_2024_monitoring_data_clean_2June2025.csv") %>% 
   select(!`...1`)
 glimpse(waterchem)
 
-#plot data to check for outliers
-waterchem %>% tidyr::pivot_longer(cols=c(6:15),names_to="variable") %>% mutate(value=as.numeric(value)) %>%
-  ggplot(aes(x=Date,y=value))+
-  geom_point()+
-  facet_wrap(~variable,scales="free")
-  
-# remove outliers
-# Consider these columns for outlier removal 
-cols_to_consider <- colnames(waterchem)[6:15]
-sd_limit <- 3 #will count anything with a sd>3 to be an outlier
-#create function that filters outliers based on sd_limit
-remove_outlier_values <- function(data_to_filter, cols = cols_to_consider, limit = sd_limit){
-  # Copy the data to avoid modifying the original
-  data_filtered <- data_to_filter
-    # Loop through each specified column
-  for (col in cols) {
-    # Compute z-scores
-    z_scores <- abs((data_to_filter[[col]] - mean(data_to_filter[[col]], na.rm = TRUE)) / 
-                      sd(data_to_filter[[col]], na.rm = TRUE))
-        # Replace values exceeding the limit with NA
-    data_filtered[[col]][z_scores > limit] <- NA
-  }
-    return(data_filtered)
-}
-#run function to remove outliers from data columns
-waterchem_v2 <- remove_outlier_values(waterchem)
-
-#check outlier removal
-waterchem_v2 %>% tidyr::pivot_longer(cols=c(6:15),names_to="variable") %>% mutate(value=as.numeric(value)) %>%
-  ggplot(aes(x=Date,y=value))+
-  geom_point()+
-  facet_wrap(~variable,scales="free")
-
 #convert to long format
-waterchem_long <- tidyr::pivot_longer(waterchem_v2,cols=c(6:15),names_to="variable") %>% mutate(value=as.numeric(value))
+waterchem_long <- tidyr::pivot_longer(waterchem,cols=c(6:15),names_to="variable") %>% mutate(value=as.numeric(value))
 glimpse(waterchem_long)
 
 variables <- unique(waterchem_long$variable)
@@ -176,9 +143,15 @@ ui <- fluidPage(
                  plotOutput("season_timeseries")
                )
              ) #close sidebar layout
+    ),
+    tabPanel("Download raw data",
+             p("Download the .csv file with data shown on this website"),
+             p("Click the button below to download the data. The data have been processed through quality assurance and quality control protocols
+               including duplicate checks and outlier removals (>3 sds from the mean for each variable)."),
+             downloadButton("downloadData","Download")
+             )
     )
-  ) #close all panels
-) #close UI
+  ) #close UI
 
 ### -------------------------------------------------------------------------------------------------- ###
 ### ----------------------------------------- Set up Server ------------------------------------------ ###
@@ -329,6 +302,14 @@ server <- function(input, output, session) {
       ylab("Cl- (ug/L)")+
       theme_classic(base_size=14)
   })
+  
+  output$downloadData <- downloadHandler(
+    filename = function() {
+      paste("data-", Sys.Date(), ".csv", sep="")
+    },
+    content = function(file) {
+      write.csv(waterchem, file)
+    })
   
   
 }
