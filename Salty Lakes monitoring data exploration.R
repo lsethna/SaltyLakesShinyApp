@@ -149,7 +149,15 @@ ui <- fluidPage(
              p("Click the button below to download the data. The data have been processed through quality assurance and quality control protocols
                including duplicate checks and outlier removals (>3 sds from the mean for each variable)."),
              downloadButton("downloadData","Download")
-             )
+             ),
+    tabPanel("Credits",
+             p("This project was funded by the Minnesota Environment and Natural Resources Trust Fund (2022-072 Subd. 04l)"),
+             imageOutput("lccmr"),
+             p("The project was managed and implemented by the Science Museum of Minnesota's St. Croix Watershed Research Station"),
+             imageOutput("scwrs"),
+             p("Project Managers: Mark Edlund and Hailey Sauer"),
+             p("Field and laboratory scientists: Zoe Plechaty, Ari Pouchek, Kelsey Boeff"),
+             p("Website design and creation: Lienne Sethna and Jackalyn Wyrobek"))
     )
   ) #close UI
 
@@ -310,6 +318,24 @@ server <- function(input, output, session) {
     content = function(file) {
       write.csv(waterchem, file)
     })
+  
+  output$lccmr <- renderImage({
+    list(
+      src = file.path("ENTRF Logo - color.png"),
+      contentType = "png",
+      width = 212,
+      height = 154
+    )
+  }, deleteFile = FALSE)
+  
+  output$scwrs <- renderImage({
+    list(
+      src = file.path("SMM+SCWRS.png"),
+      contentType = "png",
+      width = 596,
+      height = 126
+    )
+  }, deleteFile = FALSE)
   
   
 }
