@@ -3,10 +3,12 @@
 ### -------------------------------------------------------------------------------------------------- ###
 
 rm(list=ls())
-# getwd()
-# setwd("C:/Users/lsethna_smm/Documents/GitHub/SaltyLakesShinyApp")
 
-librarian::shelf(readxl,zoo,shiny,tidyverse,tidyr,hydroTSM)
+library(zoo)
+library(shiny)
+library(tidyverse)
+library(tidyr)
+library(hydroTSM)
 
 #read in cleaned dataset
 waterchem <- read_csv("Salty_2023_2024_monitoring_data_clean.csv") %>% 
