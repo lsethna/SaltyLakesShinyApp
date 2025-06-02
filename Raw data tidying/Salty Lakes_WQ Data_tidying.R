@@ -22,6 +22,7 @@ rm(list = ls())
 
 #check working directory
 getwd()
+setwd("C:/Users/lsethna_smm/Documents/GitHub/SaltyLakesShinyApp/Raw data tidying")
 
 #read in the data
 #you'll need to change this based on where the data is stored on your computer
@@ -49,10 +50,10 @@ glimpse(WQ_Data)
 WQ_Data <- WQ_Data %>% mutate_at(vars(`Chl-a (ug/L)`:`Cl- (ug/L)`), as.numeric)
 
 #remove first row with no data
-WQ_Data <- WQ_Data[2:382,]
+WQ_Data <- WQ_Data[-1,]
 
 ## ----------------------------------- ##
-# Data tidying ----
+## --- edit site names and depths ---- ##
 ## ----------------------------------- ##
 
 #get list of unique sites and dates in WQ_Data
@@ -145,18 +146,59 @@ unique(WQ_Data$Risk_Level)
 unique(WQ_Data$Region)
 
 ## ----------------------------------- ##
-# Export cleaned data
+## ---------- remove dups ------------ ##
 ## ----------------------------------- ##
 
 glimpse(WQ_Data)
 
-#export without the dups
+#remove dups
 WQ_Data_clean <- WQ_Data %>% filter(dup=="") %>%
   select(lake,Risk_Level,Region,`Collection Date`,Depth,`Chl-a (ug/L)`:`Cl- (ug/L)`) %>%
   rename(Date=`Collection Date`)
 glimpse(WQ_Data_clean)
 
-write.csv(WQ_Data_clean,file="Salty_2023_2024_monitoring_data_clean.csv")
+## ----------------------------------- ##
+## -------- check outliers ----------- ##
+## ----------------------------------- ##
+
+#plot data to check for outliers
+WQ_Data_clean %>% tidyr::pivot_longer(cols=c(6:15),names_to="variable") %>% mutate(value=as.numeric(value)) %>%
+  ggplot(aes(x=Date,y=value))+
+  geom_point()+
+  facet_wrap(~variable,scales="free")
+
+# remove outliers
+# Consider these columns for outlier removal 
+cols_to_consider <- colnames(WQ_Data_clean)[6:15]
+sd_limit <- 3 #will count anything with a sd>3 to be an outlier
+#create function that filters outliers based on sd_limit
+remove_outlier_values <- function(data_to_filter, cols = cols_to_consider, limit = sd_limit){
+  # Copy the data to avoid modifying the original
+  data_filtered <- data_to_filter
+  # Loop through each specified column
+  for (col in cols) {
+    # Compute z-scores
+    z_scores <- abs((data_to_filter[[col]] - mean(data_to_filter[[col]], na.rm = TRUE)) / 
+                      sd(data_to_filter[[col]], na.rm = TRUE))
+    # Replace values exceeding the limit with NA
+    data_filtered[[col]][z_scores > limit] <- NA
+  }
+  return(data_filtered)
+}
+#run function to remove outliers from data columns
+WQ_Data_clean_v2 <- remove_outlier_values(WQ_Data_clean)
+
+#check outlier removal
+WQ_Data_clean_v2 %>% tidyr::pivot_longer(cols=c(6:15),names_to="variable") %>% mutate(value=as.numeric(value)) %>%
+  ggplot(aes(x=Date,y=value))+
+  geom_point()+
+  facet_wrap(~variable,scales="free")
+
+## ---------------------------------- ##
+## ------- export clean .csv -------- ##
+## ---------------------------------- ##
+
+write.csv(WQ_Data_clean_v2,file="Salty_2023_2024_monitoring_data_clean_2June2025.csv")
 
 ## ----------------------------------- ##
 # Plotting
