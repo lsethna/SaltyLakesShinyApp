@@ -6,6 +6,8 @@ rm(list=ls())
 
 library(zoo)
 library(shiny)
+library(bslib)
+library(shinythemes)
 library(tidyverse)
 library(tidyr)
 library(hydroTSM)
@@ -27,7 +29,8 @@ depths <- unique(waterchem_long$Depth)
 ### ------------------------------------- Set up User Interface -------------------------------------- ###
 ### -------------------------------------------------------------------------------------------------- ###
 
-ui <- fluidPage(
+ui <- fluidPage( theme = bs_theme(bootswatch = "yeti"), #sets theme for entire app
+#####
   titlePanel("Water chemistry data collected as part of the LCCMR - Salty Lakes project"),
   tabsetPanel(
     tabPanel("About",
@@ -54,8 +57,17 @@ ui <- fluidPage(
                
             ) #close sidebar
     ), # close tab
-    
+#####
     tabPanel("Monitoring data exploration",
+             card( #cards will organize each of the sets of plots together on the page
+               card_title("Visualize the data over time for each sample lake"),
+               card_body(full_screen=T, #eliminates need to scroll
+               p(class = "text-muted",
+                 "The plot below will show a timeseries of a specific variable for selected lakes. 
+                 Each point represents the measured value for the variable, and the shape of the point corresponds to the depth at which 
+                 the sample was taken. The epilimnion (epi) of the lake is the top layer of the lake and samples were taken using a 2 m tube 
+                 that integrates water within the top 2 m of the lake. The hypolimnion (hypo) of the lake is the bottom layer, samples were taken 
+                 using a Van Dorn samples that collects water from 1 m off the lake bottom"),
              #side bar layout allows you to add box on the side of the page, good for plotting
              sidebarLayout(
                sidebarPanel(
@@ -68,7 +80,13 @@ ui <- fluidPage(
                mainPanel(
                  plotOutput("timeseriesplot")
                )
-             ), #close sidebar layout
+             ) #close sidebar layout
+             )), #close card_body and card
+             card(
+               card_title("A title for the plot here"),
+               card_body(full_screen=T,
+                         p(class="text_muted",
+                           "What is this plot doing?"),
              sidebarLayout(
                sidebarPanel(
                  p("Select the variable you want to compare between lakes and depths:"),
@@ -80,7 +98,9 @@ ui <- fluidPage(
                  plotOutput("lake_depth_boxplot")
                )
              ) #close sidebar layout
-    ),
+    )), #close card_body and card
+), #close tab panel
+##### 
     tabPanel("Exploring the role of road salt across lakes, regions, and risk levels",
              sidebarLayout(
                sidebarPanel(
@@ -124,6 +144,7 @@ ui <- fluidPage(
                )
              ) #close sidebar layout
     ), #close tab panel
+#####
     tabPanel("Exploring the role of road salt by season",
              sidebarLayout(
                sidebarPanel(
@@ -159,6 +180,7 @@ ui <- fluidPage(
              p("Field and laboratory scientists: Zoe Plechaty, Ari Pouchek, Kelsey Boeff"),
              p("Website design and creation: Lienne Sethna and Jackalyn Wyrobek"))
     )
+#####
   ) #close UI
 
 ### -------------------------------------------------------------------------------------------------- ###
