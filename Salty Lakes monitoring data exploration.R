@@ -30,9 +30,12 @@ depths <- unique(waterchem_long$Depth)
 ### -------------------------------------------------------------------------------------------------- ###
 
 ui <- fluidPage( theme = bs_theme(bootswatch = "yeti"), #sets theme for entire app
-#####
+
   titlePanel("Water chemistry data collected as part of the LCCMR - Salty Lakes project"),
+
   tabsetPanel(
+    
+#####
     tabPanel("About",
              #side bar layout allows you to add box on the side of the page, good for plotting
              sidebarLayout(
@@ -102,6 +105,11 @@ ui <- fluidPage( theme = bs_theme(bootswatch = "yeti"), #sets theme for entire a
 ), #close tab panel
 ##### 
     tabPanel("Exploring the role of road salt across lakes, regions, and risk levels",
+             card(
+               card_title("A title for the plot here"),
+               card_body(full_screen=T,
+                         p(class="text_muted",
+                           "What is this plot doing?"),
              sidebarLayout(
                sidebarPanel(
                  p("Select the variable you want to plot in relation to chloride concentration:"),
@@ -116,6 +124,12 @@ ui <- fluidPage( theme = bs_theme(bootswatch = "yeti"), #sets theme for entire a
                  plotOutput("chloride_plot")
                )
              ), #close sidebar layout
+               )), #close card
+             card(
+               card_title("A title for the plot here"),
+               card_body(full_screen=T,
+                         p(class="text_muted",
+                           "What is this plot doing?"),
              sidebarLayout(
                sidebarPanel(
                  p("Select the variable you want to compare between risk levels:"),
@@ -125,6 +139,12 @@ ui <- fluidPage( theme = bs_theme(bootswatch = "yeti"), #sets theme for entire a
                  plotOutput("risk_level_boxplot")
                )
              ), #close sidebar layout
+               )), #close card
+             card(
+               card_title("A title for the plot here"),
+               card_body(full_screen=T,
+                         p(class="text_muted",
+                           "What is this plot doing?"),
              sidebarLayout(
                sidebarPanel(
                  p("Select the variable you want to plot in relation to chloride concentration:"),
@@ -134,6 +154,12 @@ ui <- fluidPage( theme = bs_theme(bootswatch = "yeti"), #sets theme for entire a
                  plotOutput("chloride_plot2")
                )
              ), #close sidebar layout
+               )), #close card
+             card(
+               card_title("A title for the plot here"),
+               card_body(full_screen=T,
+                         p(class="text_muted",
+                           "What is this plot doing?"),
              sidebarLayout(
                sidebarPanel(
                  p("Select the variable you want to plot:"),
@@ -143,9 +169,15 @@ ui <- fluidPage( theme = bs_theme(bootswatch = "yeti"), #sets theme for entire a
                  plotOutput("region_boxplot")
                )
              ) #close sidebar layout
+               )), #close card
     ), #close tab panel
 #####
     tabPanel("Exploring the role of road salt by season",
+             card(
+               card_title("A title for the plot here"),
+               card_body(full_screen=T,
+                         p(class="text_muted",
+                           "What is this plot doing?"),
              sidebarLayout(
                sidebarPanel(
                  p("Select what lake(s) to look at:"),
@@ -164,24 +196,43 @@ ui <- fluidPage( theme = bs_theme(bootswatch = "yeti"), #sets theme for entire a
                  plotOutput("season_timeseries")
                )
              ) #close sidebar layout
-    ),
+    )), #close card
+    ), #close tab
+#####
     tabPanel("Download raw data",
-             p("Download the .csv file with data shown on this website"),
-             p("Click the button below to download the data. The data have been processed through quality assurance and quality control protocols
-               including duplicate checks and outlier removals (>3 sds from the mean for each variable)."),
+             card(
+               card_title("Download the .csv file with data shown on this website"),
+               card_body(full_screen=T,
+                         p(class="text_muted",
+                           "Click the button below to download the data. The data have been processed through quality assurance 
+                           and quality control protocols including duplicate checks and outlier removals 
+                           (>3 sds from the mean for each variable)."),
              downloadButton("downloadData","Download")
-             ),
+             )) #close card
+             ), #close tab
+#####
     tabPanel("Credits",
-             p("This project was funded by the Minnesota Environment and Natural Resources Trust Fund (2022-072 Subd. 04l)"),
-             imageOutput("lccmr"),
-             p("The project was managed and implemented by the Science Museum of Minnesota's St. Croix Watershed Research Station"),
+             card(
+               card_title("Funding"),
+               card_body(full_screen=T,
+                         p(class="text_muted",
+                           "This project was funded by the Minnesota Environment and Natural Resources Trust Fund (2022-072 Subd. 04l)"),
+             imageOutput("lccmr")
+               )), #close card
+             card(
+               card_title(""),
+               card_body(full_screen=T,
+                         p(class="text_muted",
+                          "The project was managed and implemented by the Science Museum of Minnesota's St. Croix Watershed Research Station"),
              imageOutput("scwrs"),
              p("Project Managers: Mark Edlund and Hailey Sauer"),
              p("Field and laboratory scientists: Zoe Plechaty, Ari Pouchek, Kelsey Boeff"),
-             p("Website design and creation: Lienne Sethna and Jackalyn Wyrobek"))
-    )
+             p("Website design and creation: Lienne Sethna and Jackalyn Wyrobek")
+               )) #close card
+             ) #close tab
 #####
-  ) #close UI
+  ) #close tabset panels
+) #close UI
 
 ### -------------------------------------------------------------------------------------------------- ###
 ### ----------------------------------------- Set up Server ------------------------------------------ ###
