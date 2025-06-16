@@ -180,7 +180,7 @@ ui <- fluidPage( theme = bs_theme(bootswatch = "yeti"), #sets theme for entire a
                            "What is this plot doing?"),
              sidebarLayout(
                sidebarPanel(
-                 p("Select what lake(s) to look at:"),
+                 p("Select what lake to look at:"),
                  selectInput("chloride_lake",label="Lake",choices=lakes,multiple=F)
                ),
                mainPanel(
@@ -266,7 +266,8 @@ server <- function(input, output, session) {
   output$timeseriesplot <- renderPlot({
     ggplot(time_data(),aes(x=Date,y=value,color=lake,shape=Depth))+
       geom_point(size=3)+
-      theme_classic(base_size=14)
+      theme_classic(base_size=14) +
+      ylab("Value")
   })
   
   depth_data <- reactive({
@@ -279,7 +280,8 @@ server <- function(input, output, session) {
     ggplot(depth_data(),aes(y=value,x=lake,fill=Depth))+
       geom_boxplot()+
       scale_fill_manual(values=c("#c1e7ff","#004c6d"))+
-      theme_classic(base_size=14)
+      theme_classic(base_size=14) +
+      xlab("Lake") + ylab("Value")
   })
   
   chloride_data <- reactive({
@@ -294,7 +296,8 @@ server <- function(input, output, session) {
   output$chloride_plot <- renderPlot({
     ggplot(chloride_data(),aes(x=`Cl- (ug/L)`,y=value,color=lake,shape=Depth))+
       geom_point(size=3)+
-      theme_classic(base_size=14)
+      theme_classic(base_size=14) +
+      ylab("Value")
   })
   
   region_data <- reactive({
@@ -349,7 +352,8 @@ server <- function(input, output, session) {
       geom_point()+
       facet_wrap(~Risk_Level, ncol=3) +
       theme_classic(base_size=14)+
-      theme(strip.background=element_blank())
+      theme(strip.background=element_blank()) +
+      ylab("Value")
   })
   
   chloride_timeseries_data <- reactive({
@@ -380,7 +384,7 @@ server <- function(input, output, session) {
       scale_color_manual(values=c("#b87e39","#3bc54f","#de4f53","#4b98de"))+
       geom_smooth(se=F,color="black")+
       scale_x_date(date_labels = "%b")+
-      ylab("Cl- (ug/L)")+
+      ylab("Value")+
       theme_classic(base_size=14)
   })
   
