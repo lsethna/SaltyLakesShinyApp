@@ -12,10 +12,19 @@ library(tidyverse)
 library(tidyr)
 library(hydroTSM)
 
-#read in cleaned dataset
+#read in cleaned dataset & rename columns for user ease 
 waterchem <- read_csv("Salty_2023_2024_monitoring_data_clean_2June2025.csv") %>% 
-  select(!`...1`)
+  select(!`...1`) %>%
+  rename(`Chlorophyll-a (ug/L)`= `Chl-a (ug/L)`,
+         `Soluble Reactive Phosphorus (ug P/L)` = `SRP (ug P/L)`,
+         `Dissolved Inorganic Carbon (mg C/L)` = `DIC (mg C/L)`,
+         `Dissolved Organic Carbon (mg C/L)` = `DOC (mg C/L)`,
+         `Dissolved Silica (mg SiO2/L)` = `DSi (mg SiO2/L)`,
+         `Cl- (mg/L)` = `Cl- (ug/L)`) #correcting chloride units
 glimpse(waterchem)
+
+#rename columns with acronyms for user ease
+
 
 #convert to long format
 waterchem_long <- tidyr::pivot_longer(waterchem,cols=c(6:15),names_to="variable") %>% mutate(value=as.numeric(value))
@@ -287,14 +296,14 @@ server <- function(input, output, session) {
   chloride_data <- reactive({
     waterchem_long %>%
       pivot_wider(names_from=variable,values_from=value,values_fn=mean) %>%
-      pivot_longer(!c(lake,Risk_Level,Region,Date,Depth,`Cl- (ug/L)`),names_to="variable") %>%
+      pivot_longer(!c(lake,Risk_Level,Region,Date,Depth,`Cl- (mg/L)`),names_to="variable") %>%
       dplyr::filter(lake %in% input$lake_chloride,
                     variable %in% input$variable_chloride,
                     Depth %in% input$depth_chloride) 
     
   })
   output$chloride_plot <- renderPlot({
-    ggplot(chloride_data(),aes(x=`Cl- (ug/L)`,y=value,color=lake,shape=Depth))+
+    ggplot(chloride_data(),aes(x=`Cl- (mg/L)`,y=value,color=lake,shape=Depth))+
       geom_point(size=3)+
       theme_classic(base_size=14) +
       ylab("Value")
@@ -343,12 +352,12 @@ server <- function(input, output, session) {
       mutate(Risk_Level = fct_relevel(Risk_Level, 
                                       "Impacted", "At Risk", "Least Impacted")) %>%
       pivot_wider(names_from=variable,values_from=value,values_fn=mean) %>%
-      pivot_longer(!c(lake,Risk_Level,Region,Date,Depth,`Cl- (ug/L)`),names_to="variable") %>%
+      pivot_longer(!c(lake,Risk_Level,Region,Date,Depth,`Cl- (mg/L)`),names_to="variable") %>%
       dplyr::filter(variable %in% input$y_variable_chloride2)
   })
   
   output$chloride_plot2 <- renderPlot({
-    ggplot(risk_level_chloride_data(),aes(x=`Cl- (ug/L)`, y=value, color=Depth))+
+    ggplot(risk_level_chloride_data(),aes(x=`Cl- (mg/L)`, y=value, color=Depth))+
       geom_point()+
       facet_wrap(~Risk_Level, ncol=3) +
       theme_classic(base_size=14)+
@@ -359,7 +368,7 @@ server <- function(input, output, session) {
   chloride_timeseries_data <- reactive({
     waterchem_long %>%
       mutate(season=hydroTSM::time2season(Date,out.fmt="seasons")) %>%
-      filter(variable=="Cl- (ug/L)") %>%
+      filter(variable=="Cl- (mg/L)") %>%
       dplyr::filter(lake %in% input$chloride_lake)
   })
   output$chloride_timeseries <- renderPlot({
@@ -368,7 +377,7 @@ server <- function(input, output, session) {
       scale_color_manual(values=c("#b87e39","#3bc54f","#de4f53","#4b98de"))+
       geom_smooth(se=F,color="black")+
       scale_x_date(date_labels = "%b")+
-      ylab("Cl- (ug/L)")+
+      ylab("Cl- (mg/L)")+
       theme_classic(base_size=14)
   })
   
