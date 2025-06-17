@@ -15,16 +15,16 @@ library(hydroTSM)
 #read in cleaned dataset & rename columns for user ease 
 waterchem <- read_csv("Salty_2023_2024_monitoring_data_clean_2June2025.csv") %>% 
   select(!`...1`) %>%
+  #rename columns with acronyms for user readability
   rename(`Chlorophyll-a (ug/L)`= `Chl-a (ug/L)`,
          `Soluble Reactive Phosphorus (ug P/L)` = `SRP (ug P/L)`,
+         `Ammonia (mg N/L)` = `NH3 (mg N/L)`,
+         `Nitrate+Nitrite (mg N/L)` = `NO3 + NO2 (mg N/L)`,
          `Dissolved Inorganic Carbon (mg C/L)` = `DIC (mg C/L)`,
          `Dissolved Organic Carbon (mg C/L)` = `DOC (mg C/L)`,
          `Dissolved Silica (mg SiO2/L)` = `DSi (mg SiO2/L)`,
-         `Cl- (mg/L)` = `Cl- (ug/L)`) #correcting chloride units
+         `Chloride (mg/L)` = `Cl- (ug/L)`) #correcting chloride units
 glimpse(waterchem)
-
-#rename columns with acronyms for user ease
-
 
 #convert to long format
 waterchem_long <- tidyr::pivot_longer(waterchem,cols=c(6:15),names_to="variable") %>% mutate(value=as.numeric(value))
@@ -72,14 +72,16 @@ ui <- fluidPage( theme = bs_theme(bootswatch = "yeti"), #sets theme for entire a
 #####
     tabPanel("Monitoring data exploration",
              card( #cards will organize each of the sets of plots together on the page
-               card_title("Visualize the data over time for each sample lake"),
+               card_title("Visualize the data over time"),
                card_body(full_screen=T, #eliminates need to scroll
                p(class = "text-muted",
-                 "The plot below will show a timeseries of a specific variable for selected lakes. 
-                 Each point represents the measured value for the variable, and the shape of the point corresponds to the depth at which 
-                 the sample was taken. The epilimnion (epi) of the lake is the top layer of the lake and samples were taken using a 2 m tube 
-                 that integrates water within the top 2 m of the lake. The hypolimnion (hypo) of the lake is the bottom layer, samples were taken 
-                 using a Van Dorn samples that collects water from 1 m off the lake bottom"),
+                 "TThe plot below will show a time-series of a specific variable for selected lakes. 
+                 Each point represents the measured value for the variable, and the shape of the point 
+                 corresponds to the depth at which the sample was taken. The epilimnion (epi) of the 
+                 lake is the top layer of the lake and samples were taken from combined water from 1m 
+                 and 2m using a Van Dorn sampler . The hypolimnion (hypo) of the lake is the bottom 
+                 layer, samples were taken using a Van Dorn sampler that collects water from 1 m off 
+                 the lake bottom."),
              #side bar layout allows you to add box on the side of the page, good for plotting
              sidebarLayout(
                sidebarPanel(
@@ -95,10 +97,16 @@ ui <- fluidPage( theme = bs_theme(bootswatch = "yeti"), #sets theme for entire a
              ) #close sidebar layout
              )), #close card_body and card
              card(
-               card_title("A title for the plot here"),
+               card_title("Compare data between epilimnion and hypolimnion samples"),
                card_body(full_screen=T,
                          p(class="text_muted",
-                           "What is this plot doing?"),
+                           "The plot below will show a boxplot of a specific variable for selected lakes. 
+                           Each box represents the range of all data points over the study period that 
+                           corresponds to that lake and depth. The middle line represents the median and 
+                           the upper and lower limits of the box are the upper and lower quartiles. The 
+                           lines extending from the boxes signify the full spread of values and points 
+                           are outliers. The color of the boxes corresponds to the sample depth of 
+                           epilimnion or hypolimnion."),
              sidebarLayout(
                sidebarPanel(
                  p("Select the variable you want to compare between lakes and depths:"),
@@ -115,10 +123,18 @@ ui <- fluidPage( theme = bs_theme(bootswatch = "yeti"), #sets theme for entire a
 ##### 
     tabPanel("Exploring the role of road salt across lakes, regions, and risk levels",
              card(
-               card_title("A title for the plot here"),
+               card_title("Visualize the relationship between chloride and water quality parameters"),
                card_body(full_screen=T,
                          p(class="text_muted",
-                           "What is this plot doing?"),
+                           "The plot below is a scatter plot which shows data points of different 
+                           chloride measurements and the corresponding values of another selected 
+                           variable. You may select which lakes you would like to see, which 
+                           appear as different colors, and the depth of the measurement, which 
+                           appear as different shapes. Scatterplots are useful for determining 
+                           potential relationships between the independent variable, on the x axis, 
+                           and the dependent variable, on the y axis. [For some lakes, 
+                           chlorophyll-a was not measured in the hypolimnion and will return a 
+                           blank plot.]"),
              sidebarLayout(
                sidebarPanel(
                  p("Select the variable you want to plot in relation to chloride concentration:"),
@@ -135,10 +151,12 @@ ui <- fluidPage( theme = bs_theme(bootswatch = "yeti"), #sets theme for entire a
              ), #close sidebar layout
                )), #close card
              card(
-               card_title("A title for the plot here"),
+               card_title("Compare variables across depth and chloride pollution risk level"),
                card_body(full_screen=T,
                          p(class="text_muted",
-                           "What is this plot doing?"),
+                           "The plot below will show a boxplot of a specific variable for all the 
+                           lakes in the three risk levels and differentiate between values from the 
+                           epilimnion and the hypolimnion."),
              sidebarLayout(
                sidebarPanel(
                  p("Select the variable you want to compare between risk levels:"),
@@ -150,10 +168,14 @@ ui <- fluidPage( theme = bs_theme(bootswatch = "yeti"), #sets theme for entire a
              ), #close sidebar layout
                )), #close card
              card(
-               card_title("A title for the plot here"),
+               card_title("Visualize the relationship between chloride and other water quality parameters across risk levels"),
                card_body(full_screen=T,
                          p(class="text_muted",
-                           "What is this plot doing?"),
+                           "The plot below graphs chloride and another selected variable in scatterplots 
+                           divided by chloride risk levels. Measurements from the epilimnion and 
+                           hypolimnion are represented by different colors. This allows investigation 
+                           of how the relationships between chloride and other water quality parameters 
+                           may vary across salt impairment risk levels."),
              sidebarLayout(
                sidebarPanel(
                  p("Select the variable you want to plot in relation to chloride concentration:"),
@@ -165,10 +187,17 @@ ui <- fluidPage( theme = bs_theme(bootswatch = "yeti"), #sets theme for entire a
              ), #close sidebar layout
                )), #close card
              card(
-               card_title("A title for the plot here"),
+               card_title("Visualize differences in variables across geographic regions"),
                card_body(full_screen=T,
                          p(class="text_muted",
-                           "What is this plot doing?"),
+                           "This graph creates boxplots for each lake studied for a chosen variable, 
+                           with colors signifying depth and salt impairment risk level. Each box 
+                           represents the study lakes, grouped into 5 geographic regions around the 
+                           MSP metro area and Alexandria (Central Minnesota). Within each region, 
+                           each lake is represented by its measured risk level. This visualization 
+                           allows for comparison of the median and spread of a selected variable for 
+                           each lake, both across and within regions, as well as between depths and 
+                           risk levels."),
              sidebarLayout(
                sidebarPanel(
                  p("Select the variable you want to plot:"),
@@ -183,10 +212,16 @@ ui <- fluidPage( theme = bs_theme(bootswatch = "yeti"), #sets theme for entire a
 #####
     tabPanel("Exploring the role of road salt by season",
              card(
-               card_title("A title for the plot here"),
+               card_title("Visualize seasonal water quality"),
                card_body(full_screen=T,
                          p(class="text_muted",
-                           "What is this plot doing?"),
+                           "The two plots below show the seasonality of chloride concentrations (top) 
+                           and a selected variable (bottom) in the epilimnion and hypolimnion for a 
+                           selected lake over time. The season in which the samples were taken is 
+                           signified by color and the depth is signified by shape. Plotting the data 
+                           in this way and comparing between these two plots allows detecting seasonal 
+                           shifts in chloride that might be due to road salt runoff and how other 
+                           variables might respond to increased chloride throughout the year."),
              sidebarLayout(
                sidebarPanel(
                  p("Select what lake to look at:"),
@@ -296,14 +331,14 @@ server <- function(input, output, session) {
   chloride_data <- reactive({
     waterchem_long %>%
       pivot_wider(names_from=variable,values_from=value,values_fn=mean) %>%
-      pivot_longer(!c(lake,Risk_Level,Region,Date,Depth,`Cl- (mg/L)`),names_to="variable") %>%
+      pivot_longer(!c(lake,Risk_Level,Region,Date,Depth,`Chloride (mg/L)`),names_to="variable") %>%
       dplyr::filter(lake %in% input$lake_chloride,
                     variable %in% input$variable_chloride,
                     Depth %in% input$depth_chloride) 
     
   })
   output$chloride_plot <- renderPlot({
-    ggplot(chloride_data(),aes(x=`Cl- (mg/L)`,y=value,color=lake,shape=Depth))+
+    ggplot(chloride_data(),aes(x=`Chloride (mg/L)`,y=value,color=lake,shape=Depth))+
       geom_point(size=3)+
       theme_classic(base_size=14) +
       ylab("Value")
@@ -352,12 +387,12 @@ server <- function(input, output, session) {
       mutate(Risk_Level = fct_relevel(Risk_Level, 
                                       "Impacted", "At Risk", "Least Impacted")) %>%
       pivot_wider(names_from=variable,values_from=value,values_fn=mean) %>%
-      pivot_longer(!c(lake,Risk_Level,Region,Date,Depth,`Cl- (mg/L)`),names_to="variable") %>%
+      pivot_longer(!c(lake,Risk_Level,Region,Date,Depth,`Chloride (mg/L)`),names_to="variable") %>%
       dplyr::filter(variable %in% input$y_variable_chloride2)
   })
   
   output$chloride_plot2 <- renderPlot({
-    ggplot(risk_level_chloride_data(),aes(x=`Cl- (mg/L)`, y=value, color=Depth))+
+    ggplot(risk_level_chloride_data(),aes(x=`Chloride (mg/L)`, y=value, color=Depth))+
       geom_point()+
       facet_wrap(~Risk_Level, ncol=3) +
       theme_classic(base_size=14)+
@@ -368,16 +403,16 @@ server <- function(input, output, session) {
   chloride_timeseries_data <- reactive({
     waterchem_long %>%
       mutate(season=hydroTSM::time2season(Date,out.fmt="seasons")) %>%
-      filter(variable=="Cl- (mg/L)") %>%
+      filter(variable=="Chloride (mg/L)") %>%
       dplyr::filter(lake %in% input$chloride_lake)
   })
   output$chloride_timeseries <- renderPlot({
     ggplot(chloride_timeseries_data(),aes(x=Date,y=value))+
-      geom_point(aes(color=season),size=3)+
+      geom_point(aes(color=season,shape=Depth),size=3)+
       scale_color_manual(values=c("#b87e39","#3bc54f","#de4f53","#4b98de"))+
       geom_smooth(se=F,color="black")+
       scale_x_date(date_labels = "%b")+
-      ylab("Cl- (mg/L)")+
+      ylab("Chloride (mg/L)")+
       theme_classic(base_size=14)
   })
   
@@ -389,7 +424,7 @@ server <- function(input, output, session) {
   })
   output$season_timeseries <- renderPlot({
     ggplot(season_data(),aes(x=Date,y=value))+
-      geom_point(aes(color=season),size=3)+
+      geom_point(aes(color=season,shape=Depth),size=3)+
       scale_color_manual(values=c("#b87e39","#3bc54f","#de4f53","#4b98de"))+
       geom_smooth(se=F,color="black")+
       scale_x_date(date_labels = "%b")+
