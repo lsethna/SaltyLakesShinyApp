@@ -5,7 +5,7 @@ account: liennes
 server: shinyapps.io
 hostUrl: https://api.shinyapps.io/v1
 appId: 14850588
-bundleId: 10472829
+bundleId: 10486876
 url: https://liennes.shinyapps.io/SaltyLakesShinyApp/
 version: 1
 asMultiple: FALSE

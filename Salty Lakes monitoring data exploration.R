@@ -4,6 +4,7 @@
 
 rm(list=ls())
 
+library(readxl)
 library(zoo)
 library(shiny)
 library(bslib)
@@ -34,6 +35,9 @@ variables <- unique(waterchem_long$variable)
 lakes <- unique(waterchem_long$lake)
 depths <- unique(waterchem_long$Depth)
 
+#read in site list with region and impairment level
+site_table <- read_excel("SL_site_salt_impairment_region.xlsx")
+
 ### -------------------------------------------------------------------------------------------------- ###
 ### ------------------------------------- Set up User Interface -------------------------------------- ###
 ### -------------------------------------------------------------------------------------------------- ###
@@ -53,9 +57,9 @@ ui <- fluidPage( theme = bs_theme(bootswatch = "yeti"), #sets theme for entire a
                 Each of the study lakes represented a gradient of salinity and impairment risk due to salt.
                 The data shown as part of this project are from water quality monitoring efforts between June 2023 and January 2025 and help 
                  scientists understand how road salt impacts lake water quality and ecosystem function.")),
-               mainPanel(imageOutput("map"))
-  
-             ), #close sidebar layout
+               mainPanel(imageOutput("map"),
+                         tableOutput("site_table")),
+            ), #close sidebar layout
              sidebarLayout(
                sidebarPanel(
                  p("We care about salt concentrations (here, as chloride) in lakes because it disrupts the way in which lakes process nutrients 
@@ -65,8 +69,7 @@ ui <- fluidPage( theme = bs_theme(bootswatch = "yeti"), #sets theme for entire a
                  ), #close sidebar panel
                mainPanel(
                  imageOutput("diagram")
-                 ) #close main panel
-               
+                 ), #close main panel
             ) #close sidebar
     ), # close tab
 #####
@@ -291,6 +294,10 @@ server <- function(input, output, session) {
       height = 361
     )
   }, deleteFile = FALSE)
+  
+  output$site_table <- renderTable({
+    site_table
+  }, striped=T, deleteFile = FALSE)
   
   output$diagram <- renderImage({
     list(
